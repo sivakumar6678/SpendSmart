@@ -32,7 +32,16 @@ ul {
 li {
     margin-bottom: 5px;
 }
-/*  */
+.sidebar{
+    background-color: #f8f9fa;
+    border-right: 10px solid #e9ecef;
+}
+.dashboardcontent{
+    background: red;
+    height: 100vh;
+    
+}
+
 /* From Uiverse.io by SchawnnahJ */ 
 .loader {
     position: relative;

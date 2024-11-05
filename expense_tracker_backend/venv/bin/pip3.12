@@ -1,6 +1,4 @@
-#!/bin/sh
-'''exec' "/home/sivakumarc/Documents/Projects/Expese Tracker/expense_tracker_backend/venv/bin/python3" "$0" "$@"
-' '''
+#!/home/sivakumarc/Documents/Projects/spendsmart/expense_tracker_backend/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

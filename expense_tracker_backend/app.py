@@ -2,16 +2,18 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
+# from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from datetime import datetime, timedelta, timezone
 import uuid
-
 app = Flask(__name__)
 CORS(app)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:CSKsiva%4066@localhost/spendsmart'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# app.config['JWT_SECRET_KEY'] = 'wcdo6ZbGVVmBBNUt7RqfCYVXEDpd9shD '
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
+# jwt = JWTManager(app)
 
 # User Model
 class User(db.Model):
@@ -64,8 +66,8 @@ class PasswordResetToken(db.Model):
     token = db.Column(db.String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     user = db.relationship('User', backref=db.backref('reset_tokens', lazy=True))
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(datetime.timezone.utc))
-    expires_at = db.Column(db.DateTime, default=lambda: datetime.now(datetime.timezone.utc) + timedelta(hours=1))
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    expires_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc) + timedelta(hours=1))
 
     def is_valid(self):
         return datetime.now(datetime.timezone.utc) < self.expires_at
@@ -82,8 +84,12 @@ def login():
     email = data.get("email")
     password = data.get("password")
     user = User.query.filter_by(email=email).first()
+    
     if user and user.check_password(password):
+        # access_token = create_access_token(identity=user.id)
         return jsonify({"message": "Login successful", "user": user.username}), 200
+
+        # return jsonify({"message": "Login successful", "token": access_token, "user": user.username}), 200
     return jsonify({"error": "Invalid email or password"}), 401
 
 
@@ -148,10 +154,12 @@ def reset_password():
 
     return jsonify({"message": "Password reset successful"}), 200
 
-# Getting user data
 @app.route('/api/user-data', methods=['GET'])
+# @jwt_required()
 def get_user_data():
-    user_id = 1  # Change this as necessary to get the logged-in user
+    # user_id = get_jwt_identity()  # Retrieve the user ID from the JWT token
+    user_id = 1  # Adjust as needed
+    print(user_id)
 
     user = User.query.get(user_id)
     if not user:
@@ -164,7 +172,12 @@ def get_user_data():
     # Prepare the response data
     user_data = {
         "fullName": user.full_name,
+        "email": user.email,
+        "gender": user.gender,
+        "profilePic": user.profile_pic,
+        "qualifications": user.qualifications,
         "accountBalance": user.account_balance,
+        "createdAt": user.created_at,
         "recentTransactions": [
             {
                 "description": transaction.description,
@@ -188,6 +201,12 @@ def get_user_data():
     }
 
     return jsonify(user_data), 200
+
+
+# @app.route('/api/update-profile', methods=['POST'])
+# def update_profile():
+#     data = request.get_json()
+#     user_id = 1
 
 #     # Add sample transactions for testing
 #     user_id = 1  # Adjust as needed
