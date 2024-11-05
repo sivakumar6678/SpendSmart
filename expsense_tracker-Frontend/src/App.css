@@ -1,0 +1,60 @@
+/* Global CSS Variables */
+:root {
+  --header-height: 3rem;
+  --font-semi: 600;
+  --font-bold: 800;
+  --hue-color: 224;
+  --first-color: hsl(var(--hue-color), 89%, 60%);
+  --second-color: hsl(var(--hue-color), 56%, 12%);
+  --third-color: hsl(var(--hue-color), 100%, 90%);
+  --header-bg-color:linear-gradient(135deg, #334e4dc0, #405f5ec9, #2b3f3ec9);
+  --nav-color: linear-gradient(to right, 
+                #FFDDC1 16.66%, #F7E3A9 16.66%, #F7E3A9 33.32%, 
+                #CDE8F7 33.32%, #E8DFF7 49.98%, 
+                #E8DFF7 66.64%, #FFF4CC 66.64%, 
+                #FFF4CC 83.3%, #D3D3D3 83.3%);
+  --nav-color1:linear-gradient(135deg,#FFDDC1 16.66%, #F7E3A9 16.66%, #F7E3A9 33.32%, 
+                                         #CDE8F7 33.32%, #E8DFF7 49.98%, 
+                                         #E8DFF7 66.64%, #FFF4CC 66.64%, 
+                                         #FFF4CC 83.3%, #D3D3D3 83.3%);
+  --body-font: "Poppins", sans-serif;
+  --big-font-size: 2rem;
+  --medium-font-size: 1.65rem;
+  --h2-font-size: 1.25rem;
+  --normal-font-size: 1rem;
+
+  --smaller-font-size: 0.75rem;
+  --mb-2: 1rem;
+  --mb-4: 2rem;
+  --mb-5: 2.5rem;
+  --mb-6: 3rem;
+  --z-back: -10;
+  --z-fixed: 100;
+}
+
+/* Base styles */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--body-font);
+  background-color: var(--second-color);
+  color: #333;
+}
+/* Responsive font sizes */
+@media (max-width: 768px) {
+  :root{
+    --big-font-size: 1.8rem; /* Adjust for smaller screens */
+    --medium-font-size: 1.5rem; /* Smaller h3 on smaller screens */
+    --h2-font-size: 1rem; /* Smaller h2 on smaller screens */
+    --normal-font-size: 0.9rem; /* Smaller paragraph text */
+  }
+}
+
+@media (max-width: 480px) {
+  :root{
+    --big-font-size: 1.5rem; /* Further adjust for very small screens */
+    --medium-font-size: 1.15rem; /* Even smaller h3 on very small screens */
+    --h2-font-size: 0.9rem; /* Even smaller h2 on very small screens */
+    --normal-font-size: 0.8rem; /* Even smaller paragraph text */
+  }
+}

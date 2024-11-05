@@ -1,0 +1,80 @@
+/* Footer Container */
+.footer {
+    background-color: var(--second-color);
+    color: #333;
+    padding: 2rem;
+    text-align: center;
+    position: relative; /* Added for layering effects */
+    overflow: hidden; /* To hide any overflow */
+}
+
+.footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(255, 221, 193, 0.5), rgba(247, 227, 169, 0.5));
+    z-index: -1; /* To keep it behind the footer content */
+}
+
+/* Footer Content */
+.footer-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.footer h3,
+.footer h4 {
+    margin: 1rem 0;
+    font-weight: var(--font-bold);
+    color: var(--third-color);
+}
+
+.footer p {
+    font-size: var(--normal-font-size);
+    color: var(--third-color);
+    margin: 1rem 0;
+}
+
+/* Footer Social Section */
+.footer-social {
+    margin: 20px 0;
+}
+
+/* Footer Lists */
+.footer ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.footer ul li {
+    margin: 0.5rem 0;
+}
+
+/* Footer Links */
+.footer a {
+    color: var(--first-color);
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.footer a:hover {
+    color: #0056b3; /* A darker shade on hover */
+    text-decoration: underline;
+}
+
+/* Social Links */
+.footer .social-links {
+    display: flex;
+    justify-content: center;
+    gap: 20px; /* Space between icons */
+}
+
+/* Footer Bottom */
+.footer-bottom {
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: #777;
+}

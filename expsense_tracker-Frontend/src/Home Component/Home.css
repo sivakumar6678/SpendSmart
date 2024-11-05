@@ -1,0 +1,125 @@
+/* Home Section */
+.home {
+    display: flex;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    background-image: url('../assets/best-wireless-expense-management-software.jpg');
+    background-size: cover;
+    background-position: center;
+    transform: scaleX(-1); /* Mirror background */
+}
+
+.homepara {
+    text-align: right;
+    justify-content: flex-end;
+    color: #f5d742; /* Light yellow for visibility */
+    font-weight: 600;
+    font-size: var(--big-font-size);
+    margin-top: 20px;
+    padding: 2rem 4rem;
+    width: 60%;
+    max-width: 850px;
+    background: rgba(0, 0, 0, 0.5); /* Semi-transparent background for readability */
+    border-radius: 8px;
+    transform: scaleX(-1); /* Mirror content back */
+    backdrop-filter: blur(5px); /* Blurs background slightly */
+}
+
+/* About Section */
+.about {
+    margin: 30px auto;
+    padding: 5rem;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.about h2 {
+    text-align: center;
+    color: #333;
+    font-size: var(--big-font-size);
+    margin-bottom: 15px;
+}
+/* Card Container */
+.card-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+/* Card Styles */
+.card {
+    background: var(--nav-color1); /* Use the same gradient as the header */
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    padding: 15px;
+    margin: 10px;
+    flex: 1 1 45%; /* Adjust the width to 45% and allow wrapping */
+    min-width: 250px; /* Minimum width for small screens */
+    color: #fff; /* Text color for better contrast */
+    position: relative; /* Needed for pseudo-elements */
+}
+
+/* Optional: Add a hover effect for better interaction */
+.card:hover {
+    transform: scale(1.02); /* Slightly enlarge the card on hover */
+    transition: .9s linear ;
+}
+
+/* Optional: Add an overlay effect for the cards */
+.card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 8px; /* Match the card's border radius */
+    z-index: 1; /* Ensure overlay is on top */
+    pointer-events: none; /* Make sure the overlay doesn't block interactions */
+}
+
+/* Adjusting the text to be above the overlay */
+.card h3, .card p {
+    position: relative; /* Bring text above the overlay */
+    z-index: 2; /* Higher z-index than overlay */
+}
+
+
+.card h3 {
+    text-align: center;
+    font-size: var(--medium-font-size);
+    color: var(--first-color);
+    margin-bottom: 10px;
+}
+
+.card p {
+    color: var(--second-color);
+    text-align: center;
+    font-size: var(--normal-font-size);
+    line-height: 1.5;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .homepara {
+        width: 85%;
+        padding: 1rem;
+        /* font-size: 1.2rem; */
+        text-align: center;
+        margin: auto;
+    }
+
+    .about {
+        width: 90%;
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .homepara {
+        padding: 0.5rem;
+    }
+
+   
+}
