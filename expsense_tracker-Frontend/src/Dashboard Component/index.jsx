@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Typography, Box, Drawer, List, ListItem, ListItemText, AppBar, Toolbar, TextField, Button } from '@mui/material';
 import './Dashboard.css';
+import IncomeForm from './Income';
 
 const drawerWidth = 240;
 
@@ -8,12 +9,27 @@ const Dashboard = () => {
     const [userData, setUserData] = useState(null);
     const [activeSection, setActiveSection] = useState('Dashboard');
 
-   // Example for Error Handling in fetchUserData
     useEffect(() => {
         const fetchUserData = async () => {
+            const token = localStorage.getItem('token'); // Retrieve the token from localStorage
+            if (!token) {
+                console.error("No token found. Please log in.");
+                return;
+            }
+    
             try {
-                const response = await fetch('http://127.0.0.1:5000//api/user-data');
-                if (!response.ok) throw new Error('Failed to fetch user data');
+                const response = await fetch('http://127.0.0.1:5000/api/user-data', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                });
+    
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user data');
+                }
+    
                 const data = await response.json();
                 setUserData(data);
             } catch (error) {
@@ -21,13 +37,14 @@ const Dashboard = () => {
                 alert('Failed to load user data. Please try again later.');
             }
         };
-
+    
         fetchUserData();
-}, []);
-
+    }, []);
+    
+    
 
     if (!userData) {
-        return <div className="loader">Loading...</div>;
+        return <div className="loader"></div>;
     }
 
     const handleSectionChange = (section) => setActiveSection(section);
@@ -65,25 +82,41 @@ const Dashboard = () => {
                         </ul>
                     </Box>
                 );
-            case 'Income':
-                return (
-                    <Box>
-                        <Typography variant="body1">Total Income This Month: ${userData.totalMonthlyIncome}</Typography>
-                        <ul>
-                            {userData.recentIncome.map((income, index) => (
-                                <li key={index}>{income.description}: ${income.amount}</li>
-                            ))}
-                        </ul>
-                    </Box>
-                );
+                case 'Income':
+                    return (
+                        <Box>
+                            {/* Render the Income Form */}
+                            <IncomeForm />
+                            
+                            {/* Display total monthly income */}
+                            <Typography variant="body1" sx={{ mt: 2 }}>
+                                Total Income This Month: ${userData.totalMonthlyIncome}
+                            </Typography>
+                            
+                            {/* Render recent income transactions */}
+                            <Typography variant="h6" mt={2}>
+                                Recent Income Transactions:
+                            </Typography>
+                            <ul>
+                                {userData.recentIncome.map((income, index) => (
+                                    <li key={index}>
+                                        <Typography variant="body1" sx={{ fontSize: '1rem' }}>
+                                            {income.description}: <strong>${income.amount}</strong>
+                                        </Typography>
+                                    </li>
+                                ))}
+                            </ul>
+                        </Box>
+                    );
+    
             case 'Profile':
                 return (
                     <Box>
- {userData.profilePic ? (
-    <img src={userData.profilePic} alt="Profile" style={{ width: '150px', height: '150px', borderRadius: '50%' }} />
-) : (
-    <Typography variant="body1">No profile image available</Typography>
-)}
+                        {userData.profilePic ? (
+                            <img src={userData.profilePic} alt="Profile" style={{ width: '150px', height: '150px', borderRadius: '50%' }} />
+                        ) : (
+                            <Typography variant="body1">No profile image available</Typography>
+                        )}
 
                         <Typography variant="body1">Name: {userData.fullName}</Typography>
                         <Typography variant="body1">Email: {userData.email}</Typography>
@@ -109,9 +142,14 @@ const Dashboard = () => {
                     formData.append('gender', e.target.gender.value);
 
                     try {
-                        const response = await fetch('/api/update-profile', {
+                        const token = localStorage.getItem('token'); 
+                        const response = await fetch('http://127.0.0.1:5000/api/update-profile', {
+                            
                             method: 'POST',
                             body: formData,
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                            },
                         });
                         console.log("formData", formData);
                         console.log("response", response);
@@ -166,6 +204,7 @@ const Dashboard = () => {
                                 <Typography variant="body1">Date Joined: {userData.createdAt}</Typography>
                             </Box>
                             <Button type="submit" variant="contained">Save Changes</Button>
+                            <Button variant="outlined" onClick={() => setActiveSection('Profile')} sx={{ ml: 2 }}>Cancel</Button>
                         </form>
                     </Box>
                 );

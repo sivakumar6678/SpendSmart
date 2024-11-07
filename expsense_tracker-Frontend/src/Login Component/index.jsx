@@ -55,6 +55,7 @@ function Login_Register() {
             const data = await response.json();
             if (response.ok) {
                 console.log('Login successful:', data);
+                localStorage.setItem('token', data.token); // Store token in localStorage
                 window.location.href = '/dashboard';
             } else {
                 console.error('Login error:', data.error);
@@ -62,7 +63,8 @@ function Login_Register() {
         } catch (error) {
             console.error('Login error:', error);
         }
-    }; 
+    };
+    
 
     const handleSignupSubmit = async (event) => {
         event.preventDefault();
