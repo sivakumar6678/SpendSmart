@@ -284,25 +284,33 @@ def add_income():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 # Endpoint to get the user's income data (total income and recent income)
-@app.route('/api/get-user-income/<int:user_id>', methods=['GET'])
-def get_user_income(user_id):
+
+@app.route('/api/get-user-income', methods=['GET'])
+@jwt_required()
+def get_user_income():
+    user_id = get_jwt_identity()  # Retrieve the user ID from the JWT token
+
     try:
         # Calculate total monthly income
         today = datetime.today()
         first_day_of_month = today.replace(day=1)
+        
         total_income = db.session.query(db.func.sum(Income.amount)).filter(
             Income.user_id == user_id,
             Income.date >= first_day_of_month
-        ).scalar() or 0.0
-        
-        # Get recent income entries (limit to 5)
-        recent_income = Income.query.filter(Income.user_id == user_id).order_by(Income.date.desc()).limit(5).all()
+        ).scalar() or 0.0  # Default to 0.0 if no income for the month
 
-        # Prepare data to send back
+        # Get recent income entries (limit to 5)
+        recent_income = Income.query.filter(Income.user_id == user_id).order_by(Income.date.desc()).all()
+
+        # Prepare the response data
         recent_income_data = [{
-            'description': income.source,
+            'source': income.source,
             'amount': income.amount,
-            'date': income.date.strftime('%Y-%m-%d')
+            'date': income.date.strftime('%Y-%m-%d'),
+            'paymentMethod': income.payment_method,
+            'notes': income.notes,
+            'otherSource': income.other_source
         } for income in recent_income]
 
         return jsonify({
@@ -311,5 +319,6 @@ def get_user_income(user_id):
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)

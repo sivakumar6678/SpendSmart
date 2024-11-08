@@ -8,41 +8,48 @@ const drawerWidth = 240;
 const Dashboard = () => {
     const [userData, setUserData] = useState(null);
     const [activeSection, setActiveSection] = useState('Dashboard');
+    const [recentIncome, setRecentIncome] = useState([]);
+    const [totalMonthlyIncome, setTotalMonthlyIncome] = useState(0);
+    const [showIncomeForm, setShowIncomeForm] = useState(false);
+    const [filters, setFilters] = useState({
+        month: '',
+        category: '',
+        paymentMethod: '',
+    });
+         const fetchUserData = async () => {
+        const token = localStorage.getItem('token'); // Retrieve the token from localStorage
+        if (!token) {
+            console.error("No token found. Please log in.");
+            return;
+        }
 
+        try {
+            const response = await fetch('http://127.0.0.1:5000/api/user-data', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch user data');
+            }
+            
+            const data = await response.json();
+            setUserData(data);
+                                            
+        } catch (error) {
+            console.error('Error fetching user data or income transactions:', error);
+            alert('Failed to load data. Please try again later.');
+        }
+    };
     useEffect(() => {
-        const fetchUserData = async () => {
-            const token = localStorage.getItem('token'); // Retrieve the token from localStorage
-            if (!token) {
-                console.error("No token found. Please log in.");
-                return;
-            }
-    
-            try {
-                const response = await fetch('http://127.0.0.1:5000/api/user-data', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                });
-    
-                if (!response.ok) {
-                    throw new Error('Failed to fetch user data');
-                }
-    
-                const data = await response.json();
-                setUserData(data);
-            } catch (error) {
-                console.error('Error fetching user data:', error);
-                alert('Failed to load user data. Please try again later.');
-            }
-        };
-    
         fetchUserData();
+        // getUserIncome();
     }, []);
     
-    
-
+      
     if (!userData) {
         return <div className="loader"></div>;
     }
@@ -64,7 +71,7 @@ const Dashboard = () => {
                             {userData.recentTransactions.map((transaction, index) => (
                                 <li key={index}>
                                     <Typography variant="body1" sx={{ fontSize: '1rem' }}>
-                                        {transaction.description}: <strong>${transaction.amount}</strong>
+                                        {transaction.description}: <strong>₹{transaction.amount}</strong>
                                     </Typography>
                                 </li>
                             ))}
@@ -82,33 +89,15 @@ const Dashboard = () => {
                         </ul>
                     </Box>
                 );
-                case 'Income':
-                    return (
-                        <Box>
-                            {/* Render the Income Form */}
-                            <IncomeForm />
-                            
-                            {/* Display total monthly income */}
-                            <Typography variant="body1" sx={{ mt: 2 }}>
-                                Total Income This Month: ${userData.totalMonthlyIncome}
-                            </Typography>
-                            
-                            {/* Render recent income transactions */}
-                            <Typography variant="h6" mt={2}>
-                                Recent Income Transactions:
-                            </Typography>
-                            <ul>
-                                {userData.recentIncome.map((income, index) => (
-                                    <li key={index}>
-                                        <Typography variant="body1" sx={{ fontSize: '1rem' }}>
-                                            {income.description}: <strong>${income.amount}</strong>
-                                        </Typography>
-                                    </li>
-                                ))}
-                            </ul>
-                        </Box>
-                    );
-    
+                // Handling the Income section rendering
+            case 'Income':
+ 
+                    // Reset filters button logic
+               
+                
+                return (
+                    <IncomeForm />
+                );
             case 'Profile':
                 return (
                     <Box>

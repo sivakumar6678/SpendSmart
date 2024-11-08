@@ -41,6 +41,58 @@ li {
     height: 100vh;
     
 }
+.filters {
+    margin: 20px 0;
+    display: flex;
+    /* flex-direction: column; */
+    gap: 15px;
+}
+.filters select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 200px;
+}
+
+.total-income {
+    margin-top: 20px;
+    font-weight: bold;
+}
+
+.recent-income-title {
+    margin-top: 30px;
+    margin-bottom: 10px;
+}
+
+.income-table-container {
+    overflow-x: auto;
+}
+
+.income-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.income-table th, .income-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.income-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+.no-income {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+}
+
+.incomesection{
+}
 
 /* From Uiverse.io by SchawnnahJ */ 
 .loader {
