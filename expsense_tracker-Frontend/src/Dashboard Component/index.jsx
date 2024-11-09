@@ -1,22 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Typography, Box, Drawer, List, ListItem, ListItemText, AppBar, Toolbar, TextField, Button } from '@mui/material';
+import { Container, Typography, Box, Drawer, List, ListItem, ListItemText, AppBar, Toolbar, TextField, Button, Paper } from '@mui/material';
 import './Dashboard.css';
 import IncomeForm from './Income';
+import ExpenseForm from './Expense';
+import Dashboard_Data from '../Dashboard Component';
 
 const drawerWidth = 240;
 
 const Dashboard = () => {
     const [userData, setUserData] = useState(null);
     const [activeSection, setActiveSection] = useState('Dashboard');
-    const [recentIncome, setRecentIncome] = useState([]);
-    const [totalMonthlyIncome, setTotalMonthlyIncome] = useState(0);
-    const [showIncomeForm, setShowIncomeForm] = useState(false);
-    const [filters, setFilters] = useState({
-        month: '',
-        category: '',
-        paymentMethod: '',
-    });
-         const fetchUserData = async () => {
+   
+    const fetchUserData = async () => {
         const token = localStorage.getItem('token'); // Retrieve the token from localStorage
         if (!token) {
             console.error("No token found. Please log in.");
@@ -40,13 +35,12 @@ const Dashboard = () => {
             setUserData(data);
                                             
         } catch (error) {
-            console.error('Error fetching user data or income transactions:', error);
+            console.error('Error fetching user data ', error);
             alert('Failed to load data. Please try again later.');
         }
     };
     useEffect(() => {
         fetchUserData();
-        // getUserIncome();
     }, []);
     
       
@@ -61,62 +55,66 @@ const Dashboard = () => {
             case 'Dashboard':
                 return (
                     <Box sx={{ mt: 3 }}>
-                        <Typography variant="body1" sx={{ fontSize: '1.2rem' }}>
-                            Account Balance: <strong>${userData.accountBalance}</strong>
-                        </Typography>
-                        <Typography variant="h5" mt={2}>
-                            Recent Transactions:
-                        </Typography>
-                        <ul>
-                            {userData.recentTransactions.map((transaction, index) => (
-                                <li key={index}>
-                                    <Typography variant="body1" sx={{ fontSize: '1rem' }}>
-                                        {transaction.description}: <strong>₹{transaction.amount}</strong>
-                                    </Typography>
-                                </li>
-                            ))}
-                        </ul>
+                        <Dashboard_Data />
                     </Box>
                 );
             case 'Expenses':
                 return (
-                    <Box>
-                        <Typography variant="body1">Total Expenses This Month: ${userData.totalMonthlyExpenses}</Typography>
-                        <ul>
-                            {userData.recentExpenses.map((expense, index) => (
-                                <li key={index}>{expense.description}: ${expense.amount}</li>
-                            ))}
-                        </ul>
-                    </Box>
+                    <ExpenseForm />
                 );
-                // Handling the Income section rendering
             case 'Income':
- 
-                    // Reset filters button logic
-               
-                
                 return (
                     <IncomeForm />
                 );
-            case 'Profile':
-                return (
-                    <Box>
-                        {userData.profilePic ? (
-                            <img src={userData.profilePic} alt="Profile" style={{ width: '150px', height: '150px', borderRadius: '50%' }} />
-                        ) : (
-                            <Typography variant="body1">No profile image available</Typography>
-                        )}
-
-                        <Typography variant="body1">Name: {userData.fullName}</Typography>
-                        <Typography variant="body1">Email: {userData.email}</Typography>
-                        <Typography variant="body1">Gender: {userData.gender}</Typography>
-                        <Typography variant="body1">Date Joined: {userData.createdAt}</Typography>
-                        <Typography variant="body1">Account Balance: ${userData.accountBalance}</Typography>
-                        <Box mt={2}>
-                            <Button variant="contained" onClick={() => setActiveSection('EditProfile')}>Edit Profile</Button>
+                case 'Profile':
+                    return (
+                        <Box sx={{ textAlign: 'center', mt: 3 }}>
+                            <Paper elevation={3} sx={{ padding: 3, borderRadius: '16px', backgroundColor: '#f9f9f9' }}>
+                                {userData.profilePic ? (
+                                    <img
+                                        src={userData.profilePic}
+                                        alt="Profile"
+                                        style={{
+                                            width: '150px',
+                                            height: '150px',
+                                            borderRadius: '50%',
+                                            marginBottom: '20px',
+                                            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+                                        }}
+                                    />
+                                ) : (
+                                    <Typography variant="body1" sx={{ mb: 2 }}>No profile image available</Typography>
+                                )}
+                
+                                <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1, color: '#3f51b5' }}>
+                                    <b>Name :</b> {userData.fullName}
+                                </Typography>
+                                <Typography variant="body1" sx={{ color: 'gray', mb: 1 }}>
+                                    <b>Email:</b> {userData.email}
+                                </Typography>
+                                <Typography variant="body1" sx={{ mb: 1 }}>
+                                    <strong>Gender:</strong> {userData.gender || 'Not specified'}
+                                </Typography>
+                                <Typography variant="body1" sx={{ mb: 1 }}>
+                                    <strong>Date Joined:</strong> {new Date(userData.createdAt).toLocaleDateString()}
+                                </Typography>
+                                <Typography variant="h5" sx={{ fontWeight: 'bold', mt: 2, color: '#4caf50' }}>
+                                    Account Balance: ${userData.accountBalance.toFixed(2)}
+                                </Typography>
+                
+                                <Box mt={3}>
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        onClick={() => setActiveSection('EditProfile')}
+                                        sx={{ mr: 2, borderRadius: '8px', padding: '10px 20px' }}
+                                    >
+                                        Edit Profile
+                                    </Button>
+                                </Box>
+                            </Paper>
                         </Box>
-                    </Box>
-                );
+                    );
             case 'Categories':
                 return <Box><Typography variant="h6">Categories</Typography></Box>;
             case 'EditProfile':

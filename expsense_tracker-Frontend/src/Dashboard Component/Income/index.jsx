@@ -27,6 +27,7 @@ const IncomeForm = () => {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
     const [severity, setSeverity] = useState("success");
+    const [originalIncome, setOriginalIncome] = useState([]); // Store original income data
     const [recentIncome, setRecentIncome] = useState([]);
     const [totalMonthlyIncome, setTotalMonthlyIncome] = useState(0);
     const [showForm, setShowForm] = useState(false);
@@ -105,7 +106,8 @@ const IncomeForm = () => {
             }
         
             const data = await response.json();
-            setRecentIncome(data.recentIncome);
+            setOriginalIncome(data.recentIncome); // Store original income data
+            setRecentIncome(data.recentIncome); // Set recent income data
             setTotalMonthlyIncome(data.totalMonthlyIncome);
               
         } catch (error) {
@@ -124,7 +126,7 @@ const IncomeForm = () => {
             category: '',
             paymentMethod: '',
         });
-        fetchUserIncome();
+        setRecentIncome(originalIncome); // Reset to original income data
     };
 
     const handleFilterChange = (e, type) => {
@@ -135,8 +137,8 @@ const IncomeForm = () => {
                 [type]: value,
             };
 
-            // Now apply filtering logic with the updated filters state
-            let filteredIncome = [...recentIncome];
+            // Create a filtered array based on the original income data
+            let filteredIncome = [...originalIncome];
 
             // Apply filters
             if (newFilters.month) {
@@ -152,7 +154,7 @@ const IncomeForm = () => {
             }
 
             if (newFilters.paymentMethod) {
- filteredIncome = filteredIncome.filter(income =>
+                filteredIncome = filteredIncome.filter(income =>
                     income.paymentMethod === newFilters.paymentMethod
                 );
             }
@@ -166,7 +168,7 @@ const IncomeForm = () => {
     return (
         <Box className="incomesection">
             <Typography variant="h4" className="total-income">
-                Total Income This Month: <span style={{ color: 'green' }}>₹{totalMonthlyIncome.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}</span>
+                Income Overview: <span style={{ color: 'green' }}>₹{totalMonthlyIncome.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}</span>
             </Typography>
 
             <Box className="filters">
@@ -264,7 +266,7 @@ const IncomeForm = () => {
 
                         {income.source === "Other" && (
                             <TextField
-                                fullWidth
+ fullWidth
                                 margin="normal"
                                 label="Other Income Source"
                                 id="otherSource"
@@ -345,7 +347,10 @@ const IncomeForm = () => {
             )}
 
             <Typography variant="h6" className="recent-income-title">
-                Recent Income Transactions:
+            Income History:
+            </Typography>
+            <Typography variant="h6" className="filtered-income-title">
+            Income Summary for Filters: <span style={{ color: 'green' }}>₹{recentIncome.reduce((acc, income) => acc + parseFloat(income.amount), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}</span>
             </Typography>
 
             <Box className="income-table-container">

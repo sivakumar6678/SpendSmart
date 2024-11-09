@@ -7,19 +7,19 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from werkzeug.utils import secure_filename
 import os
 import uuid
+from flask_migrate import Migrate
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:CSKsiva%4066@localhost/spendsmart'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # Change this to a random secret key
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 app.config['UPLOAD_FOLDER'] = 'static/uploads/'  # Directory to save uploaded images
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limit upload size to 16MB
-
-# User Model
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -30,8 +30,12 @@ class User(db.Model):
     qualifications = db.Column(db.Text, nullable=True)
     gender = db.Column(db.String(10), nullable=True)
     profile_pic = db.Column(db.String(255), nullable=True)
-    account_balance = db.Column(db.Float, default=0.0)  # Add account balance field
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    account_balance = db.Column(db.Float, default=0.0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    transactions = db.relationship('Transaction', backref='user', lazy='dynamic')
+    incomes = db.relationship('Income', backref='user', lazy='dynamic')
 
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -42,34 +46,37 @@ class User(db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
 
+
+# Transaction Model
 class Transaction(db.Model):
     __tablename__ = 'transactions'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    description = db.Column(db.String(255), nullable=False)
+    category = db.Column(db.String(100), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    type = db.Column(db.String(10), nullable=False)  # 'income' or 'expense'
-    date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
-    
-    user = db.relationship('User', backref=db.backref('transactions', lazy=True))
+    date = db.Column(db.Date, default=datetime.utcnow, nullable=False)
+    payment_method = db.Column(db.String(50), nullable=False)
+    notes = db.Column(db.String(255), nullable=True)
+    other_source = db.Column(db.String(100), nullable=True)
 
     def __repr__(self):
-        return f'<Transaction {self.description}: {self.amount} ({self.type})>'
+        return f'<Transaction {self.category} - {self.amount}>'
 
-# Define the Income model
+
+# Income Model
 class Income(db.Model):
+    __tablename__ = 'incomes'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=False)  # New field to associate with user
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     source = db.Column(db.String(100), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    date = db.Column(db.Date, nullable=False)
+    date = db.Column(db.Date, default=datetime.utcnow, nullable=False)
     payment_method = db.Column(db.String(50), nullable=False)
-    notes = db.Column(db.String(255))
-    other_source = db.Column(db.String(100))
+    notes = db.Column(db.String(255), nullable=True)
+    other_source = db.Column(db.String(100), nullable=True)
 
-# Initialize the database and create tables
-with app.app_context():
-    db.create_all()
+    def __repr__(self):
+        return f'<Income {self.source} - {self.amount}>'
 
 
     
@@ -166,24 +173,40 @@ def reset_password():
 
     return jsonify({"message": "Password reset successful"}), 200
 
+
 @app.route('/api/user-data', methods=['GET'])
 @jwt_required()
 def get_user_data():
     user_id = get_jwt_identity()  # Retrieve the user ID from the JWT token
 
+    # Fetch the user from the database
     user = User.query.get(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    # Calculate total monthly income and expenses
-    total_monthly_income = sum(
-        transaction.amount for transaction in user.transactions
-        if transaction.type == 'income' and transaction.date.month == datetime.now().month
-    )
-    total_monthly_expenses = sum(
-        transaction.amount for transaction in user.transactions
-        if transaction.type == 'expense' and transaction.date.month == datetime.now().month
-    )
+    # Get the current month and year
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+
+    # Calculate total monthly income
+    total_monthly_income = db.session.query(db.func.sum(Income.amount)).filter(
+        Income.user_id == user.id,
+        db.extract('month', Income.date) == current_month,
+        db.extract('year', Income.date) == current_year
+    ).scalar() or 0.0
+
+    # Calculate total monthly expenses
+    total_monthly_expenses = db.session.query(db.func.sum(Transaction.amount)).filter(
+        Transaction.user_id == user.id,
+        db.extract('month', Transaction.date) == current_month,
+        db.extract('year', Transaction.date) == current_year
+    ).scalar() or 0.0
+
+    # Get the recent transactions (last 5)
+    recent_transactions = [
+        {"category": transaction.category, "amount": transaction.amount}
+        for transaction in user.transactions.order_by(Transaction.date.desc()).limit(5).all()
+    ]
 
     # Prepare the response data
     user_data = {
@@ -194,24 +217,13 @@ def get_user_data():
         "qualifications": user.qualifications,
         "accountBalance": user.account_balance,
         "createdAt": user.created_at,
-        "recentTransactions": [
-            {"description": transaction.description, "amount": transaction.amount}
-            for transaction in user.transactions[-5:]  # Get last 5 transactions
-        ],
+        "recentTransactions": recent_transactions,
         "totalMonthlyIncome": total_monthly_income,
-        "recentIncome": [
-            {"description": transaction.description, "amount": transaction.amount}
-            for transaction in user.transactions if transaction.type == 'income' and transaction.date.month == datetime.now().month
-        ][:5],  # Get last 5 income transactions
-        "totalMonthlyExpenses": total_monthly_expenses,
-        "recentExpenses": [
-            {"description": transaction.description, "amount": transaction.amount}
-            for transaction in user.transactions if transaction.type == 'expense' and transaction.date.month == datetime.now().month
-        ][:5],  # Get last 5 expense transactions
+        "totalMonthlyExpenses": total_monthly_expenses
     }
 
-    return jsonify(user_data), 200
-
+    return jsonify(user_data)
+    
 @app.route('/api/update-profile', methods=['POST'])
 @jwt_required()
 def update_profile():
@@ -316,6 +328,75 @@ def get_user_income():
         return jsonify({
             'totalMonthlyIncome': total_income,
             'recentIncome': recent_income_data
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/add-expense', methods=['POST'])
+def add_expense():
+    data = request.get_json()
+
+    # Validate the input
+    if not data.get('userId') or not data.get('category') or not data.get('amount') or not data.get('date') or not data.get('paymentMethod'):
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    try:
+        # Ensure that the user_id is passed
+        user_id = data['userId']
+        amount = float(data['amount'])
+        date_spent = datetime.strptime(data['date'], '%Y-%m-%d').date()
+
+        expense_entry = Transaction(
+            user_id=user_id,
+            category=data['category'],
+            amount=amount,
+            date=date_spent,
+            payment_method=data['paymentMethod'],
+            notes=data.get('notes', ''),
+            other_source=data.get('otherSource', '')
+        )
+
+        db.session.add(expense_entry)
+        db.session.commit()
+
+        return jsonify({'message': 'Expense added successfully!', 'data': data}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Endpoint to get the user's expense data (total expenses and recent expenses)
+@app.route('/api/get-user-expenses', methods=['GET'])
+@jwt_required()
+def get_user_expenses():
+    user_id = get_jwt_identity()  # Retrieve the user ID from the JWT token
+
+    try:
+        # Calculate total monthly expenses
+        today = datetime.today()
+        first_day_of_month = today.replace(day=1)
+        
+        total_expenses = db.session.query(db.func.sum(Transaction.amount)).filter(
+            Transaction.user_id == user_id,
+            Transaction.date >= first_day_of_month
+        ).scalar() or 0.0  # Default to 0.0 if no expenses for the month
+
+        # Get recent expense entries (limit to 5)
+        recent_expenses = Transaction.query.filter(
+            Transaction.user_id == user_id
+        ).order_by(Transaction.date.desc()).limit(5).all()
+
+        # Prepare the response data
+        recent_expense_data = [{
+            'category': expense.category,
+            'amount': expense.amount,
+            'paymentMethod': expense.payment_method,
+            'notes': expense.notes,
+            'otherSource': expense.other_source,
+            'date': expense.date.strftime('%Y-%m-%d')
+        } for expense in recent_expenses]
+
+        return jsonify({
+            'totalMonthlyExpenses': total_expenses,
+            'recentExpenses': recent_expense_data
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
