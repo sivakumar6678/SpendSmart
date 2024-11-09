@@ -6,8 +6,8 @@ function Login_Register() {
     const [loginActive, setLoginActive] = useState(false);
     const [signupActive, setSignupActive] = useState(false);
     const [forgotPasswordActive, setForgotPasswordActive] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
     const [signupFormData, setSignupFormData] = useState({
-        username: '',
         fullName: '',
         email: '',
         password: '',
@@ -51,14 +51,20 @@ function Login_Register() {
                 },
                 body: JSON.stringify({ email, password }),
             });
-           
             const data = await response.json();
             if (response.ok) {
                 console.log('Login successful:', data);
                 localStorage.setItem('token', data.token); // Store token in localStorage
                 window.location.href = '/dashboard';
+                setSuccessMessage('Login successful! Redirecting to dashboard...');
+                setSeverity('success');
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 2000); // Redirect after 2 s
             } else {
                 console.error('Login error:', data.error);
+                setSeverity('An error occurred during login.');
+            setSuccessMessage('');
             }
         } catch (error) {
             console.error('Login error:', error);
@@ -82,6 +88,16 @@ function Login_Register() {
             });
             // console.log("response", signupFormData);
     
+
+
+            if (response.ok) {
+                setSuccessMessage('Signup successful! You can now log in.');
+                setErrorMessage('');
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                setErrorMessage(errorData.error || 'An error occurred during signup.');
+                setSuccessMessage('');
+            }
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 console.error('Signup error:', errorData.error || 'An error occurred');
@@ -145,6 +161,17 @@ function Login_Register() {
             });
             const data = await response.json();
             console.log('Reset password successful:', data);
+            setLoginActive(true);
+            setResetFormActive(false);
+            if (response.ok) {
+                console.log('Reset password successful:', data);
+                setSuccessMessage('Password reset successful. You can now log in with your new password.');
+                setErrorMessage('');
+            } else {
+                console.error('Reset password error:', data.error);
+                setErrorMessage(data.error || 'An error occurred while resetting the password.');
+                setSuccessMessage('');
+            }
             setResetPasswordFormData({
                 email: '',
                 newPassword: '',
