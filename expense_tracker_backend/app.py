@@ -14,6 +14,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:CSKsiva%4066@localhost/spendsmart'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # Change this to a random secret key
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=1)  # Set the expiration time for JWT tokens
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
@@ -96,7 +97,8 @@ class PasswordResetToken(db.Model):
     def __repr__(self):
         return f'<PasswordResetToken for User ID {self.user_id}>'
 
-
+        # Set JWT token expiration time
+        
 
 # Login end point
 @app.route('/api/login', methods=['POST'])
@@ -215,7 +217,7 @@ def get_user_data():
         "gender": user.gender,
         "profilePic": user.profile_pic,
         "qualifications": user.qualifications,
-        "accountBalance": user.account_balance,
+        "accountBalance": total_monthly_income - total_monthly_expenses,
         "createdAt": user.created_at,
         "recentTransactions": recent_transactions,
         "totalMonthlyIncome": total_monthly_income,

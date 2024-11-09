@@ -175,7 +175,7 @@ const ExpenseForm = () => {
         <Box>
             {/* Monthly Expense Summary */}
             <Typography variant="h5" sx={{ marginBottom: 2 }}>
-            Monthly Expense Summary: ₹{totalMonthlyExpense}
+            Monthly Expense Summary: <span style={{color:'red' , fontSize:'2rem'}}> ₹{totalMonthlyExpense}</span>
             </Typography>
            
 
@@ -286,25 +286,25 @@ const ExpenseForm = () => {
                 Expense History:
             </Typography>
             <Typography variant="h5" sx={{ marginBottom: 2 }}>
-                Filtered Expenses Summary: ₹{filteredTotal}
+                Filtered Expenses Summary: <span style={{ color: 'red' }} > ₹{filteredTotal} </span>
             </Typography>
             {/* Expenses Table */}
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>Category</TableCell>
-                            <TableCell>Amount</TableCell>
-                            <TableCell>Date</TableCell>
-                            <TableCell>Payment Method</TableCell>
-                            <TableCell>Notes</TableCell>
+                            <TableCell><Typography variant="h6" component="div">Category</Typography></TableCell>
+                            <TableCell><Typography variant="h6" component="div">Amount</Typography></TableCell>
+                            <TableCell><Typography variant="h6" component="div">Date</Typography></TableCell>
+                            <TableCell><Typography variant="h6" component="div">Payment Method</Typography></TableCell>
+                            <TableCell><Typography variant="h6" component="div">Notes</Typography></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {recentExpenses.map((expense, index) => (
                             <TableRow key={index}>
                                 <TableCell>{expense.category}</TableCell>
-                                <TableCell>{expense.amount}</TableCell>
+                                <TableCell style={{ color: 'blue' }}>₹{expense.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
                                 <TableCell>{expense.date}</TableCell>
                                 <TableCell>{expense.paymentMethod}</TableCell>
                                 <TableCell>{expense.notes}</TableCell>

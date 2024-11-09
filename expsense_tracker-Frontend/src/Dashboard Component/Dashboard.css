@@ -37,10 +37,27 @@ li {
     border-right: 10px solid #e9ecef;
 }
 .dashboardcontent{
-    background: red;
+    background: whitesmoke;
     height: 100vh;
     
 }
+.dashboard_in_ex_table{
+    padding: 20px;
+    height: 400px;
+    overflow-y: auto;
+}
+.dashboard_in_ex_table table{
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #ccc;
+}
+.dashboard_in_ex_table th, .dashboard_in_ex_table td{
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+}
+
+/* filters in income and expenses compoenent */
 .filters {
     margin: 20px 0;
     display: flex;
@@ -57,20 +74,7 @@ li {
     width: 200px;
 
 }
-.total-income {
-    margin-top: 20px;
-    font-weight: bold;
-}
-
-.recent-income-title {
-    margin-top: 30px;
-    margin-bottom: 10px;
-}
-
-.income-table-container {
-    overflow-x: auto;
-}
-
+/* income component */
 .income-table {
     width: 100%;
     border-collapse: collapse;
