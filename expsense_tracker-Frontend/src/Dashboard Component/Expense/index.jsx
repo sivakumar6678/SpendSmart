@@ -55,10 +55,14 @@ const ExpenseForm = () => {
         e.preventDefault();
         setLoading(true);
         try {
+            const token = localStorage.getItem("token");
             const response = await fetch("http://127.0.0.1:5000/api/add-expense", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...expense, userId }),
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },                
+                body: JSON.stringify(expense),
             });
             if (!response.ok) throw new Error("Failed to add expense");
             setMessage("Expense added successfully!");

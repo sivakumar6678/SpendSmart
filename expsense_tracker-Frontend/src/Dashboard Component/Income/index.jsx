@@ -53,15 +53,15 @@ const IncomeForm = () => {
         e.preventDefault();
         setLoading(true);
         try {
+            const token = localStorage.getItem('token'); 
+
             const response = await fetch('http://127.0.0.1:5000/api/add-income', {
                 method: 'POST',
                 headers: {
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    ...income,
-                    userId: userId, // Sending userId along with income data
-                }),
+                body: JSON.stringify(income),
             });
 
             if (!response.ok) {
@@ -106,6 +106,7 @@ const IncomeForm = () => {
             }
         
             const data = await response.json();
+            console.log("data", data);
             setOriginalIncome(data.recentIncome); // Store original income data
             setRecentIncome(data.recentIncome); // Set recent income data
             setTotalMonthlyIncome(data.totalMonthlyIncome);

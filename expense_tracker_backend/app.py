@@ -32,7 +32,7 @@ class User(db.Model):
     gender = db.Column(db.String(10), nullable=True)
     profile_pic = db.Column(db.String(255), nullable=True)
     account_balance = db.Column(db.Float, default=0.0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     transactions = db.relationship('Transaction', backref='user', lazy='dynamic')
@@ -55,13 +55,13 @@ class Transaction(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     category = db.Column(db.String(100), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    date = db.Column(db.Date, default=datetime.utcnow, nullable=False)
+    date = db.Column(db.Date, default=lambda: datetime.now(timezone.utc), nullable=False)
     payment_method = db.Column(db.String(50), nullable=False)
     notes = db.Column(db.String(255), nullable=True)
     other_source = db.Column(db.String(100), nullable=True)
 
     def __repr__(self):
-        return f'<Transaction {self.category} - {self.amount}>'
+        return f'<Transactions {self.category} - {self.amount}>'
 
 
 # Income Model
@@ -77,7 +77,7 @@ class Income(db.Model):
     other_source = db.Column(db.String(100), nullable=True)
 
     def __repr__(self):
-        return f'<Income {self.source} - {self.amount}>'
+        return f'<Incomes {self.source} - {self.amount}>'
 
 
     
@@ -268,21 +268,23 @@ def update_profile():
     }), 200
 
 @app.route('/api/add-income', methods=['POST'])
+@jwt_required()  # Protect this route with JWT
 def add_income():
+    user_id = get_jwt_identity()  # Get user ID from JWT token
+
     data = request.get_json()
 
     # Validate the input
-    if not data.get('userId') or not data.get('source') or not data.get('amount') or not data.get('date'):
+    if not data.get('source') or not data.get('amount') or not data.get('date'):
         return jsonify({'error': 'Missing required fields'}), 400
 
     try:
-        # Ensure that the user_id is passed
-        user_id = data['userId']
         amount = float(data['amount'])
         date_received = datetime.strptime(data['date'], '%Y-%m-%d').date()
 
+        # Create a new income entry and associate it with the user_id
         income_entry = Income(
-            user_id=user_id,  # Store the user_id
+            user_id=user_id,  # Use the user_id from the JWT token
             source=data['source'],
             amount=amount,
             date=date_received,
@@ -291,11 +293,16 @@ def add_income():
             other_source=data.get('otherSource', '')
         )
 
+        # Add the income entry to the database and commit the transaction
         db.session.add(income_entry)
         db.session.commit()
 
+        # Return success response with the added income data
         return jsonify({'message': 'Income added successfully!', 'data': data}), 200
+
     except Exception as e:
+        # If there is any error, rollback and return an error message
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 # Endpoint to get the user's income data (total income and recent income)
 
@@ -315,7 +322,7 @@ def get_user_income():
         ).scalar() or 0.0  # Default to 0.0 if no income for the month
 
         # Get recent income entries (limit to 5)
-        recent_income = Income.query.filter(Income.user_id == user_id).order_by(Income.date.desc()).all()
+        recent_income = Income.query.filter(Income.user_id == user_id).order_by(Income.date.desc()).limit(5).all()
 
         # Prepare the response data
         recent_income_data = [{
@@ -335,21 +342,23 @@ def get_user_income():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/add-expense', methods=['POST'])
+@jwt_required()  # Protect this route with JWT
 def add_expense():
+    user_id = get_jwt_identity()  # Extract user ID from the JWT token
+
     data = request.get_json()
 
     # Validate the input
-    if not data.get('userId') or not data.get('category') or not data.get('amount') or not data.get('date') or not data.get('paymentMethod'):
+    if not data.get('category') or not data.get('amount') or not data.get('date') or not data.get('paymentMethod'):
         return jsonify({'error': 'Missing required fields'}), 400
 
     try:
-        # Ensure that the user_id is passed
-        user_id = data['userId']
         amount = float(data['amount'])
         date_spent = datetime.strptime(data['date'], '%Y-%m-%d').date()
 
+        # Create a new expense entry associated with the authenticated user
         expense_entry = Transaction(
-            user_id=user_id,
+            user_id=user_id,  # Use the user_id from the JWT token
             category=data['category'],
             amount=amount,
             date=date_spent,
@@ -358,11 +367,16 @@ def add_expense():
             other_source=data.get('otherSource', '')
         )
 
+        # Add the expense entry to the database and commit the transaction
         db.session.add(expense_entry)
         db.session.commit()
 
+        # Return success response with the added expense data
         return jsonify({'message': 'Expense added successfully!', 'data': data}), 200
+
     except Exception as e:
+        # If there's an error, rollback and return an error message
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 # Endpoint to get the user's expense data (total expenses and recent expenses)

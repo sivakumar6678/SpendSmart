@@ -71,8 +71,8 @@ const Dashboard = () => {
     };
     useEffect(() => {
         fetchUserData();
+        fetchDashboardData();
     }, []);
-    fetchDashboardData();
     
     const aggregateIncomeByCategory = (incomeData) => {
         const categories = [
