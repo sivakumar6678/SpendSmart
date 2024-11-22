@@ -89,7 +89,7 @@ Ensure you have the following installed on your system:
 - Signup Screen
 ![Signup Screen](images/image.png)
 - Dashboard View
-![Dashboard] (images/dashboard.png)
+![Dashboard](images/dashboard.png)
 
 ---
 
