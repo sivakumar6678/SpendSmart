@@ -1,0 +1,9 @@
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5
+Flask-Migrate==4.0.4
+mysql-connector-python==8.1.0
+Werkzeug==2.3.7
+python-dotenv==1.0.0
+Flask-WTF==1.1.1
+bcrypt==4.0.1
+Flask-Login==0.6.3
