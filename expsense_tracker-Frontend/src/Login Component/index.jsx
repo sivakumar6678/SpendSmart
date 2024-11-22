@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import { Button, TextField, Typography, Container, Box, Paper, Collapse } from '@mui/material';
+import { Button, TextField, Typography, Container, Box, Paper, Collapse, Snackbar, Alert } from '@mui/material';
 import './Login.css';
 
 function Login_Register() {
     const [loginActive, setLoginActive] = useState(false);
     const [signupActive, setSignupActive] = useState(false);
     const [forgotPasswordActive, setForgotPasswordActive] = useState(false);
+    const [severity, setSeverity] = useState("success");
+    const [message, setMessage] = useState("");
+    const [snackbarOpen, setSnackbarOpen] = useState(false); // Snackbar open state
+
     const [signupFormData, setSignupFormData] = useState({
         fullName: '',
         email: '',
@@ -38,6 +42,10 @@ function Login_Register() {
         setSignupActive(false);
     };
 
+    const handleSnackbarClose = () => {
+        setSnackbarOpen(false);
+    };
+
     const handleLoginSubmit = async (event) => {
         event.preventDefault();
         const email = event.target.email.value;
@@ -53,24 +61,34 @@ function Login_Register() {
             const data = await response.json();
             if (response.ok) {
                 console.log('Login successful:', data);
+                setMessage("User  Logged in successfully!");
+                setSeverity("success");
+                setSnackbarOpen(true); // Show Snackbar
                 localStorage.setItem('token', data.token); // Store token in localStorage
-                window.location.href = '/dashboard';
                 setTimeout(() => {
                     window.location.href = '/dashboard';
-                }, 2000); // Redirect after 2 s
+                }, 3000);
             } else {
                 console.error('Login error:', data.error);
+                setMessage(data.error || "Login failed");
+                setSeverity("error");
+                setSnackbarOpen(true); // Show Snackbar
             }
         } catch (error) {
             console.error('Login error:', error);
+            setMessage("An error occurred during login");
+            setSeverity("error");
+            setSnackbarOpen(true); // Show Snackbar
         }
     };
-    
 
     const handleSignupSubmit = async (event) => {
         event.preventDefault();
         if (!signupFormData.passwordsMatch) {
             console.error("Passwords do not match");
+            setMessage("Passwords do not match");
+            setSeverity("error");
+            setSnackbarOpen(true); // Show Snackbar
             return;
         }
         try {
@@ -81,20 +99,24 @@ function Login_Register() {
                 },
                 body: JSON.stringify(signupFormData),
             });
-            // console.log("response", signupFormData);
-    
-
-
-            
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 console.error('Signup error:', errorData.error || 'An error occurred');
+                setMessage(errorData.error || "Signup failed");
+                setSeverity("error");
+                setSnackbarOpen(true); // Show Snackbar
                 return;
             }
             setSignupActive(false);
-            setLoginActive(true);
+            setTimeout(() => {
+                
+                setLoginActive(true);
+            }, 2000);
             const data = await response.json().catch(() => ({}));
-            console.log('Signup successful:', data);
+            setMessage("User  Registered successfully!");
+            setSeverity("success");
+            setSnackbarOpen(true); // Show Snackbar
+            console.log('Signup successful :', data);
             setSignupFormData({
                 username: '',
                 fullName: '',
@@ -105,38 +127,41 @@ function Login_Register() {
             });
         } catch (error) {
             console.error('Signup error:', error);
+            setMessage("Registration Error");
+            setSeverity("error");
+            setSnackbarOpen(true); // Show Snackbar
         }
     };
-    
-    
 
     const handleSignupChange = (event) => {
         const { name, value } = event.target;
         const updatedFormData = { ...signupFormData, [name]: value };
-    
+
         if (name === "confirmPassword" || name === "password") {
             updatedFormData.passwordsMatch = updatedFormData.password === updatedFormData.confirmPassword;
         }
-    
+
         setSignupFormData(updatedFormData);
     };
-    
+
     const handleResetPasswordChange = (event) => {
         const { name, value } = event.target;
         const updatedFormData = { ...resetPasswordFormData, [name]: value };
-    
+
         if (name === "confirmNewPassword" || name === "newPassword") {
             updatedFormData.passwordsMatch = updatedFormData.newPassword === updatedFormData.confirmNewPassword;
         }
-    
+
         setResetPasswordFormData(updatedFormData);
     };
-    
 
     const handleResetPasswordSubmit = async (event) => {
         event.preventDefault();
         if (!resetPasswordFormData.passwordsMatch) {
             console.error("Passwords do not match");
+            setMessage("Passwords do not match");
+            setSeverity("error");
+            setSnackbarOpen(true); // Show Snackbar
             return;
         }
         try {
@@ -148,13 +173,16 @@ function Login_Register() {
                 body: JSON.stringify(resetPasswordFormData),
             });
             const data = await response.json();
-            console.log('Reset password successful:', data);
-            setLoginActive(true);
-            setResetFormActive(false);
             if (response.ok) {
                 console.log('Reset password successful:', data);
+                setMessage("Reset password successfully!");
+                setSeverity("success");
+                setSnackbarOpen(true); // Show Snackbar
             } else {
                 console.error('Reset password error:', data.error);
+                setMessage("Reset password Error!");
+                setSeverity("error");
+                setSnackbarOpen(true); // Show Snackbar
             }
             setResetPasswordFormData({
                 email: '',
@@ -164,6 +192,9 @@ function Login_Register() {
             });
         } catch (error) {
             console.error('Reset password error:', error);
+            setMessage("An error occurred during password reset");
+            setSeverity("error");
+            setSnackbarOpen(true); // Show Snackbar
         }
     };
 
@@ -173,7 +204,7 @@ function Login_Register() {
                 <Button variant="contained" color="success" onClick={handleLoginClick}>Log In</Button>
                 <Button variant="contained" color="success" onClick={handleSignupClick} sx={{ ml: 2 }}>Sign Up</Button>
             </Box>
-            
+
             <Collapse in={loginActive}>
                 <Paper component="form" onSubmit={handleLoginSubmit} className="form" sx={{ p: 2 }}>
                     <Typography variant="h5">Login</Typography>
@@ -207,6 +238,12 @@ function Login_Register() {
                     <Button type="submit" variant="contained" color="secondary" fullWidth>Reset Password</Button>
                 </Paper>
             </Collapse>
+
+            <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
+                <Alert onClose={handleSnackbarClose} severity={severity} sx={{ width: '100%' }}>
+                    {message}
+                </Alert>
+            </Snackbar>
         </Container>
     );
 }

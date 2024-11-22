@@ -4,8 +4,6 @@ import './Home.css';
 
 function HomeComponent() {
 
-
-
     return ( 
         <div>
             <HeaderComponent />
@@ -13,7 +11,7 @@ function HomeComponent() {
             {/* Home Section */}
             <div className="home">
                 <p className="homepara">
-                    Welcome to Expense Mate! This platform helps you manage your finances by tracking your expenses and income. 
+                    Welcome to SpendSmart! This platform helps you manage your finances by tracking your expenses and income. 
                     You can categorize spending, set budgets, and view detailed reports to better understand your financial habits.
                     Start managing your money more effectively today!
                 </p>
