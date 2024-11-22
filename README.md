@@ -87,8 +87,7 @@ Ensure you have the following installed:
 Include screenshots of key features, such as:
 
 - **Signup Screen**  
-![Signup Screen](link-to-signup-screen-image)
-
+![alt text](image.png)
 - **Dashboard View**  
 ![Dashboard](link-to-dashboard-image)
 
