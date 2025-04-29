@@ -40,7 +40,7 @@ const Dashboard = () => {
                                             
         } catch (error) {
             console.error('Error fetching user data ', error);
-            alert('Failed to load data. Please try again later.');
+            alert('Failed to load data. Please try again later.',error);
         }
     };
     const fetchDashboardData = async () => {

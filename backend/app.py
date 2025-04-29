@@ -109,7 +109,7 @@ def login():
     user = User.query.filter_by(email=email).first()
     
     if user and user.check_password(password):
-        access_token = create_access_token(identity=user.id)  # Create a JWT token
+        access_token = create_access_token(identity=str(user.id))  # Create a JWT token
         return jsonify({"message": "Login successful", "token": access_token}), 200
     return jsonify({"error": "Invalid email or password"}), 401
 
