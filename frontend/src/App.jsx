@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useRoutes } from 'react-router-
 import Dashboard from '../src/Dashboard Component';
 import './App.css'
 import HomeComponent from './Home Component';
-import AppContext from './context/AppContext';
+import AppContext from './Dashboard Component/context/AppContext';
 export function CustomRoutes() {
   const element = useRoutes([
     {

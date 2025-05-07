@@ -2,40 +2,18 @@ import React from 'react';
 import { Typography, Box, TextField, Button } from '@mui/material';
 
 const EditProfileSection = ({ userData, onUpdateProfile, onCancel }) => {
-  const updateProfileData = async (e) => {
+  // Create a wrapper function to handle form submission
+  const handleSubmit = (e) => {
+    // Prevent default form submission
     e.preventDefault();
-    const formData = new FormData();
-    formData.append('fullName', e.target.fullName.value);
-    formData.append('email', e.target.email.value);
-    if (e.target.profileImage.files.length > 0) {
-      formData.append('profileImage', e.target.profileImage.files[0]);
-    }
-    formData.append('gender', e.target.gender.value);
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://127.0.0.1:5000/api/update-profile', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error('Error updating profile');
-
-      const updatedData = await response.json();
-      onUpdateProfile(updatedData);
-      alert('Profile updated successfully!');
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      alert('Failed to update profile. Please try again later.');
-    }
+    
+    // Call the parent's onUpdateProfile function with the event
+    onUpdateProfile(e);
   };
 
   return (
     <Box>
-      <form onSubmit={updateProfileData}>
+      <form onSubmit={handleSubmit}>
         <Box mb={2}>
           <TextField
             label="Name"
@@ -59,7 +37,7 @@ const EditProfileSection = ({ userData, onUpdateProfile, onCancel }) => {
         </Box>
         <Box mb={2}>
           <Typography variant="body1">Gender:</Typography>
-          <label>
+          <label style={{ marginRight: '20px' }}>
             <input 
               type="radio" 
               name="gender" 
