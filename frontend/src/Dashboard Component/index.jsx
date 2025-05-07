@@ -449,7 +449,7 @@ const Dashboard = () => {
                 <Toolbar />
                 <List className='sidebar'>
                     {['Profile', 'Dashboard', 'Expenses', 'Income', 'Logout'].map((text) => (
-                        <ListItem button key={text} onClick={() => handleSectionChange(text)}>
+                        <ListItem button="true" key={text} onClick={() => handleSectionChange(text)}>
                             <ListItemText primary={text} />
                         </ListItem>
                     ))}
