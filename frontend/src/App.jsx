@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useRoutes } from 'react-router-
 import Dashboard from '../src/Dashboard Component';
 import './App.css'
 import HomeComponent from './Home Component';
+import AppContext from './context/AppContext';
 export function CustomRoutes() {
   const element = useRoutes([
     {
@@ -9,6 +10,9 @@ export function CustomRoutes() {
     },
     {
       path: '/dashboard', element: <Dashboard />
+    },
+    {
+      path:'/app-content' ,element : <AppContext />
     }
   ]);
   return element;
