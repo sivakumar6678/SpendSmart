@@ -2,19 +2,36 @@ import React, { useState, useEffect } from "react";
 import {
     TextField,
     Button,
-    Select,
     MenuItem,
-    InputLabel,
-    FormControl,
     Typography,
-    Container,
+    Box,
+    Card,
+    CardContent,
+    Grid,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
     Snackbar,
     Alert,
-    Box,
+    InputAdornment,
+    Chip,
+    IconButton,
+    Collapse
 } from '@mui/material';
-import '../../Dashboard Component/Dashboard.css';
+import {
+    Add as AddIcon,
+    FilterList as FilterListIcon,
+    Clear as ClearIcon,
+    AttachMoney as MoneyIcon,
+    DateRange as DateIcon,
+    Description as NoteIcon
+} from '@mui/icons-material';
 
-const IncomeForm = () => {
+const IncomeForm = ({ onSuccess }) => {
     const [income, setIncome] = useState({
         source: "",
         amount: "",
@@ -27,7 +44,7 @@ const IncomeForm = () => {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
     const [severity, setSeverity] = useState("success");
-    const [originalIncome, setOriginalIncome] = useState([]); // Store original income data
+    const [originalIncome, setOriginalIncome] = useState([]);
     const [recentIncome, setRecentIncome] = useState([]);
     const [totalMonthlyIncome, setTotalMonthlyIncome] = useState(0);
     const [showForm, setShowForm] = useState(false);
@@ -36,8 +53,6 @@ const IncomeForm = () => {
         category: '',
         paymentMethod: '',
     });
-
-    const userId = localStorage.getItem('userId');  // Assuming userId is stored in localStorage after login
 
     // Handle input changes
     const handleChange = (e) => {
@@ -53,8 +68,7 @@ const IncomeForm = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            const token = localStorage.getItem('token'); 
-
+            const token = localStorage.getItem('token');
             const response = await fetch('http://127.0.0.1:5000/api/add-income', {
                 method: 'POST',
                 headers: {
@@ -64,11 +78,8 @@ const IncomeForm = () => {
                 body: JSON.stringify(income),
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to add income');
-            }
+            if (!response.ok) throw new Error('Failed to add income');
 
-            const data = await response.json();
             setMessage("Income added successfully!");
             setSeverity("success");
             setIncome({
@@ -78,42 +89,38 @@ const IncomeForm = () => {
                 paymentMethod: "Bank Transfer",
                 notes: "",
                 otherSource: "",
-            }); // Clear form after success
-            fetchUserIncome(); // Fetch updated income data
+            });
+            setShowForm(false);
+            fetchUserIncome(); // Refresh local data
+            if (onSuccess) onSuccess(); // Notify parent to refresh global data if needed
 
         } catch (error) {
-            setMessage(error.message || "There was a problem with the request.");
+            setMessage(error.message || "Request failed.");
             setSeverity("error");
         } finally {
             setLoading(false);
         }
     };
 
-    // Fetch user income data
     const fetchUserIncome = async () => {
         try {
-            const token = localStorage.getItem('token'); 
+            const token = localStorage.getItem('token');
             const response = await fetch('http://127.0.0.1:5000/api/get-user-income', {
-              method: 'GET',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json' 
-              }
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
 
-            if (!response.ok) {
-              throw new Error('Failed to fetch user income data');
-            }
-        
+            if (!response.ok) throw new Error('Failed to fetch income data');
+
             const data = await response.json();
-            console.log("data", data);
-            setOriginalIncome(data.recentIncome); // Store original income data
-            setRecentIncome(data.recentIncome); // Set recent income data
+            setOriginalIncome(data.recentIncome);
+            setRecentIncome(data.recentIncome);
             setTotalMonthlyIncome(data.totalMonthlyIncome);
-              
         } catch (error) {
-            setMessage(error.message || "There was a problem with the request.");
-            setSeverity("error");
+            console.error(error);
         }
     };
 
@@ -122,270 +129,142 @@ const IncomeForm = () => {
     }, []);
 
     const handleResetFilters = () => {
-        setFilters({
-            month: '',
-            category: '',
-            paymentMethod: '',
-        });
-        setRecentIncome(originalIncome); // Reset to original income data
+        setFilters({ month: '', category: '', paymentMethod: '' });
+        setRecentIncome(originalIncome);
     };
 
     const handleFilterChange = (e, type) => {
         const value = e.target.value;
-        setFilters(prevState => {
-            const newFilters = {
-                ...prevState,
-                [type]: value,
-            };
+        const newFilters = { ...filters, [type]: value };
+        setFilters(newFilters);
 
-            // Create a filtered array based on the original income data
-            let filteredIncome = [...originalIncome];
-
-            // Apply filters
-            if (newFilters.month) {
-                filteredIncome = filteredIncome.filter(income =>
-                    new Date(income.date).getMonth() + 1 === parseInt(newFilters.month)
-                );
-            }
-
-            if (newFilters.category) {
-                filteredIncome = filteredIncome.filter(income =>
-                    income.source === newFilters.category
-                );
-            }
-
-            if (newFilters.paymentMethod) {
-                filteredIncome = filteredIncome.filter(income =>
-                    income.paymentMethod === newFilters.paymentMethod
-                );
-            }
-
-            setRecentIncome(filteredIncome);
-
-            return newFilters; // Return the new filters state
-        });
+        let filtered = [...originalIncome];
+        if (newFilters.month) {
+            filtered = filtered.filter(item => new Date(item.date).getMonth() + 1 === parseInt(newFilters.month));
+        }
+        if (newFilters.category) {
+            filtered = filtered.filter(item => item.source === newFilters.category);
+        }
+        if (newFilters.paymentMethod) {
+            filtered = filtered.filter(item => item.paymentMethod === newFilters.paymentMethod);
+        }
+        setRecentIncome(filtered);
     };
 
     return (
-        <Box className="incomesection">
-            <Typography variant="h4" className="total-income">
-                Income Overview: <span style={{ color: 'green' }}>₹{totalMonthlyIncome.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}</span>
-            </Typography>
+        <Box>
+            <Grid container spacing={3}>
+                <Grid item xs={12}>
+                    <Card sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+                        <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box>
+                                <Typography variant="h6">Total Monthly Income</Typography>
+                                <Typography variant="h3" fontWeight="bold">
+                                    ₹{totalMonthlyIncome.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </Typography>
+                            </Box>
+                            <MoneyIcon sx={{ fontSize: 60, opacity: 0.8 }} />
+                        </CardContent>
+                    </Card>
+                </Grid>
 
-            <Box className="filters">
-                <TextField
-                    select
-                    variant="outlined"
-                    SelectProps={{ native: true }}
-                    value={filters.month}
-                    onChange={(e) => handleFilterChange(e, 'month')}
-                >
-                    <option value="">Select Month</option>
-                    {Array.from({ length: 12 }, (_, i) => (
-                        <option value={i + 1} key={i}>
-                            {new Date(0, i).toLocaleString('en-US', { month: 'long' })}
-                        </option>
-                    ))}
-                </TextField>
+                <Grid item xs={12}>
+                    <Card>
+                        <CardContent>
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                                <Typography variant="h6">Income Transactions</Typography>
+                                <Button
+                                    variant="contained"
+                                    startIcon={showForm ? <ClearIcon /> : <AddIcon />}
+                                    onClick={() => setShowForm(!showForm)}
+                                    color={showForm ? "error" : "primary"}
+                                >
+                                    {showForm ? 'Cancel' : 'Add New Income'}
+                                </Button>
+                            </Box>
 
-                <TextField
-                    select
-                    variant="outlined"
-                    SelectProps={{ native: true }}
-                    value={filters.category}
-                    onChange={(e) => handleFilterChange(e, 'category')}
-                >
-                    <option value="">Select Category</option>
-                    <option value="Salary">Salary</option>
-                    <option value="Freelance">Freelance</option>
-                    <option value="Investments">Investments</option>
-                    <option value="Business">Business</option>
-                    <option value="Gift">Gift</option>
-                    <option value="Bonus">Bonus</option>
-                    <option value="From Person">From Person</option>
-                    <option value="Other">Other</option>
-                </TextField>
+                            <Collapse in={showForm}>
+                                <Box component="form" onSubmit={handleSubmit} sx={{ mb: 4, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField select fullWidth label="Source" name="source" value={income.source} onChange={handleChange} required>
+                                                {["Salary", "From Person", "Freelance", "Business", "Investments", "Gift", "Bonus", "Other"].map(opt => (
+                                                    <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                                                ))}
+                                            </TextField>
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField fullWidth label="Amount" name="amount" type="number" value={income.amount} onChange={handleChange} required InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }} />
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField fullWidth label="Date" name="date" type="date" value={income.date} onChange={handleChange} required InputLabelProps={{ shrink: true }} />
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField select fullWidth label="Payment Method" name="paymentMethod" value={income.paymentMethod} onChange={handleChange}>
+                                                {["Bank Transfer", "Cash", "Check"].map(opt => <MenuItem key={opt} value={opt}>{opt}</MenuItem>)}
+                                            </TextField>
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <TextField fullWidth label="Notes" name="notes" value={income.notes} onChange={handleChange} multiline rows={2} />
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <Button type="submit" variant="contained" fullWidth size="large" disabled={loading}>
+                                                {loading ? 'Adding...' : 'Save Income'}
+                                            </Button>
+                                        </Grid>
+                                    </Grid>
+                                </Box>
+                            </Collapse>
 
-                <TextField
-                    select
-                    variant="outlined"
-                    SelectProps={{ native: true }}
-                    value={filters.paymentMethod}
-                    onChange={(e) => handleFilterChange(e, 'paymentMethod')}
-                >
-                    <option value="">Select Payment Method</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Check">Check</option>
-                </TextField>
+                            <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+                                <TextField select size="small" label="Month" value={filters.month} onChange={(e) => handleFilterChange(e, 'month')} sx={{ minWidth: 150 }}>
+                                    <MenuItem value="">All Months</MenuItem>
+                                    {Array.from({ length: 12 }, (_, i) => (
+                                        <MenuItem key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('en-US', { month: 'long' })}</MenuItem>
+                                    ))}
+                                </TextField>
+                                <Button variant="outlined" startIcon={<ClearIcon />} onClick={handleResetFilters}>Clear Filters</Button>
+                            </Box>
 
-                <Button variant="outlined" onClick={handleResetFilters}>
-                    Clear Filters
-                </Button>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => setShowForm(!showForm)}
-                >
-                    {showForm ? 'Hide Income Form' : 'Add Income'}
-                </Button>
-            </Box>
-            {showForm && (
-                <Box sx={{ width: '60%', margin: '1rem auto' }}>
-                    <Typography variant="h4" gutterBottom>
-                        Income Entry
-                    </Typography>
+                            <TableContainer>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Date</TableCell>
+                                            <TableCell>Source</TableCell>
+                                            <TableCell>Method</TableCell>
+                                            <TableCell>Notes</TableCell>
+                                            <TableCell align="right">Amount</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {recentIncome.map((row, index) => (
+                                            <TableRow key={index} hover>
+                                                <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                                                <TableCell><Chip label={row.source} color="success" variant="outlined" size="small" /></TableCell>
+                                                <TableCell>{row.paymentMethod}</TableCell>
+                                                <TableCell sx={{ color: 'text.secondary', maxWidth: 200 }} noWrap>{row.notes}</TableCell>
+                                                <TableCell align="right" sx={{ fontWeight: 'bold', color: 'success.main' }}>
+                                                    ₹{row.amount.toLocaleString('en-IN')}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                        {recentIncome.length === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={5} align="center">No records found</TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
 
-                    {/* Display success/error messages */}
-                    <Snackbar open={message !== ""} autoHideDuration={6000} onClose={() => setMessage("")}>
-                        <Alert severity={severity} onClose={() => setMessage("")} sx={{ width: '100%' }}>
-                            {message}
-                        </Alert>
-                    </Snackbar>
-
-                    <form onSubmit={handleSubmit}>
-                        <FormControl fullWidth margin="normal">
-                            <InputLabel htmlFor="source">Income Source</InputLabel>
-                            <Select
-                                labelId="source-label"
-                                id="source"
-                                name="source"
-                                value={income.source}
-                                onChange={handleChange}
-                                required
-                            >
-                                <MenuItem value="Salary">Salary</MenuItem>
-                                <MenuItem value="From Person">From Person</MenuItem>
-                                <MenuItem value="Freelance">Freelance</MenuItem>
-                                <MenuItem value="Business">Business</MenuItem>
-                                <MenuItem value="Investments">Investments</MenuItem>
-                                <MenuItem value="Gift">Gift</MenuItem>
-                                <MenuItem value="Bonus">Bonus</MenuItem>
-                                <MenuItem value="Other">Other</MenuItem>
-                            </Select>
-                        </FormControl>
-
-                        {income.source === "Other" && (
-                            <TextField
- fullWidth
-                                margin="normal"
-                                label="Other Income Source"
-                                id="otherSource"
-                                name="otherSource"
-                                value={income.otherSource}
-                                onChange={handleChange}
-                                placeholder="Please specify"
-                            />
-                        )}
-
-                        <TextField
-                            fullWidth
-                            margin="normal"
-                            label="Amount"
-                            type="number"
-                            id="amount"
-                            name="amount"
-                            value={income.amount}
-                            onChange={handleChange}
-                            placeholder="e.g., 5000"
-                            required
-                        />
-
-                        <TextField
-                            fullWidth
-                            margin="normal"
-                            label="Date Received"
-                            type="date"
-                            id="date"
-                            name="date"
-                            value={income.date}
-                            onChange={handleChange}
-                            InputLabelProps={{
-                                shrink: true,
-                            }}
-                            required
-                        />
-
-                        <FormControl fullWidth margin="normal">
-                            <InputLabel htmlFor="paymentMethod">Payment Method</InputLabel>
-                            <Select
-                                labelId="paymentMethod-label"
-                                id="paymentMethod"
-                                name="paymentMethod"
-                                value={income.paymentMethod}
-                                onChange={handleChange}
-                            >
-                                <MenuItem value="Bank Transfer">Bank Transfer</MenuItem>
-                                <MenuItem value="Cash">Cash</MenuItem>
-                                <MenuItem value="Check">Check</MenuItem>
-                            </Select>
-                        </FormControl>
-
-                        <TextField
-                            fullWidth
-                            margin="normal"
-                            label="Notes (Optional)"
-                            id="notes"
-                            name="notes"
-                            value={income.notes}
-                            onChange={handleChange}
-                            placeholder="e.g., Freelance project payment"
-                            multiline
-                            rows={4}
-                        />
-
-                        <Button
-                            type="submit"
-                            variant="contained"
-                            color="primary"
-                            fullWidth
-                            disabled={loading}
-                        >
-                            {loading ? 'Adding Income...' : 'Submit'}
-                        </Button>
-                    </form>
-                </Box>
-            )}
-
-            <Typography variant="h6" className="recent-income-title">
-            Income History:
-            </Typography>
-            <Typography variant="h6" className="filtered-income-title">
-            Income Summary for Filters: <span style={{ color: 'green' }}>₹{recentIncome.reduce((acc, income) => acc + parseFloat(income.amount), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}</span>
-            </Typography>
-
-            <Box className="income-table-container">
-                <table className="income-table">
-                    <thead>
-                        <tr>
-                            <th>Source</th>
-                            <th>Amount</th>
-                            <th>Date</th>
-                            <th>Payment Method</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {recentIncome.length > 0 ? (
-                            recentIncome.map((income, index) => (
-                                <tr key={index}>
-                                    <td>{income.source}</td>
-                                    <td style={{ color: 'blue' }}>₹{income.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                                    <td>{new Date(income.date).toLocaleDateString()}</td>
-                                    <td>{income.paymentMethod}</td>
-                                    <td>{income.notes}</td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan="5" className="no-income">
-                                    No recent income transactions available.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </Box>
+            <Snackbar open={!!message} autoHideDuration={6000} onClose={() => setMessage("")}>
+                <Alert onClose={() => setMessage("")} severity={severity} sx={{ width: '100%' }}>{message}</Alert>
+            </Snackbar>
         </Box>
     );
 };

@@ -2,23 +2,31 @@ import React, { useState, useEffect } from "react";
 import {
     TextField,
     Button,
+    MenuItem,
     Typography,
     Box,
-    MenuItem,
+    Card,
+    CardContent,
+    Grid,
     Table,
     TableBody,
     TableCell,
     TableContainer,
     TableHead,
     TableRow,
-    Paper,
     Snackbar,
     Alert,
-} from "@mui/material";
-import '../../Dashboard Component/Dashboard.css';
+    InputAdornment,
+    Chip,
+    Collapse
+} from '@mui/material';
+import {
+    Add as AddIcon,
+    Clear as ClearIcon,
+    MoneyOff as ExpenseIcon
+} from '@mui/icons-material';
 
-
-const ExpenseForm = () => {
+const ExpenseForm = ({ onSuccess }) => {
     const [expense, setExpense] = useState({
         category: "",
         amount: "",
@@ -32,25 +40,19 @@ const ExpenseForm = () => {
     const [severity, setSeverity] = useState("success");
     const [originalExpenses, setOriginalExpenses] = useState([]);
     const [recentExpenses, setRecentExpenses] = useState([]);
-    const [totalMonthlyExpense,setTotalMonthlyExpense] = useState(0);
+    const [totalMonthlyExpense, setTotalMonthlyExpense] = useState(0);
     const [showForm, setShowForm] = useState(false);
     const [filters, setFilters] = useState({
         month: "",
         category: "",
         paymentMethod: "",
     });
-    const [monthlyTotal, setMonthlyTotal] = useState(0);
-    const [filteredTotal, setFilteredTotal] = useState(0);
 
-    const userId = localStorage.getItem("userId");
-
-    // Handle input change for the form
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setExpense((prevExpense) => ({ ...prevExpense, [name]: value }));
+        setExpense({ ...expense, [name]: value });
     };
 
-    // Handle form submission to add an expense
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -61,14 +63,16 @@ const ExpenseForm = () => {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
-                },                
+                },
                 body: JSON.stringify(expense),
             });
             if (!response.ok) throw new Error("Failed to add expense");
             setMessage("Expense added successfully!");
             setSeverity("success");
             setExpense({ category: "", amount: "", date: "", paymentMethod: "", notes: "" });
+            setShowForm(false);
             fetchUserExpenses();
+            if (onSuccess) onSuccess();
         } catch (error) {
             setMessage(error.message || "Failed to add expense.");
             setSeverity("error");
@@ -77,7 +81,6 @@ const ExpenseForm = () => {
         }
     };
 
-    // Fetch user expenses
     const fetchUserExpenses = async () => {
         const token = localStorage.getItem("token");
         try {
@@ -89,12 +92,9 @@ const ExpenseForm = () => {
             const data = await response.json();
             setOriginalExpenses(data.recentExpenses);
             setRecentExpenses(data.recentExpenses);
-            calculateMonthlyTotal(data.recentExpenses, filters.month);
-            calculateFilteredTotal(data.recentExpenses, filters);
             setTotalMonthlyExpense(data.totalMonthlyExpenses);
         } catch (error) {
-            setMessage(error.message || "Failed to fetch expenses.");
-            setSeverity("error");
+            console.error(error);
         }
     };
 
@@ -102,231 +102,142 @@ const ExpenseForm = () => {
         fetchUserExpenses();
     }, []);
 
-    const calculateMonthlyTotal = (expenses, selectedMonth) => {
-        const total = expenses
-            .filter(
-                (expense) =>
-                    new Date(expense.date).getMonth() + 1 === parseInt(selectedMonth)
-            )
-            .reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
-        setMonthlyTotal(total);
-    };
-
-    const calculateFilteredTotal = (expenses, filters) => {
-        let filteredExpenses = [...expenses];
-        if (filters.month) {
-            filteredExpenses = filteredExpenses.filter(
-                (expense) => new Date(expense.date).getMonth() + 1 === parseInt(filters.month)
-            );
-        }
-        if (filters.category) {
-            filteredExpenses = filteredExpenses.filter(
-                (expense) => expense.category === filters.category
-            );
-        }
-        if (filters.paymentMethod) {
-            filteredExpenses = filteredExpenses.filter(
-                (expense) => expense.paymentMethod === filters.paymentMethod
-            );
-        }
-        const total = filteredExpenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
-        setFilteredTotal(total);
-    };
-
     const handleFilterChange = (e, type) => {
         const value = e.target.value;
-        setFilters((prevState) => ({ ...prevState, [type]: value }));
-        const updatedFilters = { ...filters, [type]: value };
-        filterExpenses(updatedFilters);
-        if (type === "month") {
-            calculateMonthlyTotal(originalExpenses, value);
-        }
-        calculateFilteredTotal(originalExpenses, updatedFilters);
-    };
+        const newFilters = { ...filters, [type]: value };
+        setFilters(newFilters);
 
-    const filterExpenses = (updatedFilters) => {
-        let filteredExpenses = [...originalExpenses];
-        if (updatedFilters.month) {
-            filteredExpenses = filteredExpenses.filter(
-                (expense) => new Date(expense.date).getMonth() + 1 === parseInt(updatedFilters.month)
-            );
+        let filtered = [...originalExpenses];
+        if (newFilters.month) {
+            filtered = filtered.filter(item => new Date(item.date).getMonth() + 1 === parseInt(newFilters.month));
         }
-        if (updatedFilters.category) {
-            filteredExpenses = filteredExpenses.filter(
-                (expense) => expense.category === updatedFilters.category
-            );
+        if (newFilters.category) {
+            filtered = filtered.filter(item => item.category === newFilters.category);
         }
-        if (updatedFilters.paymentMethod) {
-            filteredExpenses = filteredExpenses.filter(
-                (expense) => expense.paymentMethod === updatedFilters.paymentMethod
-            );
+        if (newFilters.paymentMethod) {
+            filtered = filtered.filter(item => item.paymentMethod === newFilters.paymentMethod);
         }
-        setRecentExpenses(filteredExpenses);
+        setRecentExpenses(filtered);
     };
 
     const clearFilters = () => {
+        setFilters({ month: "", category: "", paymentMethod: "" });
         setRecentExpenses(originalExpenses);
-        calculateFilteredTotal(originalExpenses, { month: "", category: "", paymentMethod: "" });
-        setFilteredTotal(0);
-        setFilters({
-            month: '',
-            category: '',
-            paymentMethod: '',
-        });
     };
 
     return (
         <Box>
-            {/* Monthly Expense Summary */}
-            <Typography variant="h5" sx={{ marginBottom: 2 }}>
-            Monthly Expense Summary: <span style={{color:'red' , fontSize:'2rem'}}> ₹{totalMonthlyExpense}</span>
-            </Typography>
-           
+            <Grid container spacing={3}>
+                <Grid item xs={12}>
+                    <Card sx={{ bgcolor: 'error.light', color: 'error.contrastText' }}>
+                        <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box>
+                                <Typography variant="h6">Total Monthly Expenses</Typography>
+                                <Typography variant="h3" fontWeight="bold">
+                                    ₹{totalMonthlyExpense.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </Typography>
+                            </Box>
+                            <ExpenseIcon sx={{ fontSize: 60, opacity: 0.8 }} />
+                        </CardContent>
+                    </Card>
+                </Grid>
 
-            {/* Filters Section */}
-            <Box display="flex" alignItems="center" gap={2} marginBottom={2} className="filters">
-                <TextField
-                    select
-                    label="Month"
-                    className="filter-btn"
-                    onChange={(e) => handleFilterChange(e, "month")}
-                    value={filters.month}
-                >
-                    <MenuItem value="">Select Month</MenuItem>
-                    {Array.from({ length: 12 }, (_, i) => (
-                        <MenuItem key={i + 1} value={i + 1}>
-                            {new Date(0, i).toLocaleString("en-US", { month: "long" })}
-                        </MenuItem>
-                    ))}
-                </TextField>
-                <TextField
-                    select
-                    className="filter-btn"
-                    label="Category"
-                    onChange={(e) => handleFilterChange(e, "category")}
-                    value={filters.category}
-                >
-                    <MenuItem value="">Select Category</MenuItem>
-                    {["Food", "Transport", "Entertainment", "Shopping", "Bills", "Health", "Education", "Others"].map((cat) => (
-                        <MenuItem key={cat} value={cat}>{cat}</MenuItem>
-                    ))}
-                </TextField>
-                <TextField
-                    select
-                    className="filter-btn"
-                    label="Payment Method"
-                    onChange={(e) => handleFilterChange(e, "paymentMethod")}
-                    value={filters.paymentMethod}
-                >
-                    <MenuItem value="">Select Payment Method</MenuItem>
-                    {["Cash", "Card", "UPI", "Bank Transfer"].map((method) => (
-                        <MenuItem key={method} value={method}>{method}</MenuItem>
-                    ))}
-                </TextField>
-                <Button variant="contained" onClick={clearFilters}>Clear Filters</Button>
-                <Button variant="contained" onClick={() => setShowForm(!showForm)}>
-                    {showForm ? "Cancel" : "Add Expense"}
-                </Button>
-            </Box>
+                <Grid item xs={12}>
+                    <Card>
+                        <CardContent>
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                                <Typography variant="h6">Expense Transactions</Typography>
+                                <Button
+                                    variant="contained"
+                                    startIcon={showForm ? <ClearIcon /> : <AddIcon />}
+                                    onClick={() => setShowForm(!showForm)}
+                                    color={showForm ? "secondary" : "primary"}
+                                >
+                                    {showForm ? 'Cancel' : 'Add New Expense'}
+                                </Button>
+                            </Box>
 
-            {showForm && (
-                <form onSubmit={handleSubmit} style={{ marginBottom: 20 }}>
-                    <Box display="flex" flexDirection="column" gap={2}>
-                        <TextField
-                            label="Category"
-                            name="category"
-                            value={expense.category}
-                            onChange={handleChange}
-                            fullWidth
-                            select
-                        >
-                            <MenuItem value="">Select Category</MenuItem>
-                            {["Food", "Transport", "Entertainment", "Shopping", "Bills", "Health", "Education", "Others"].map((cat) => (
-                                <MenuItem key={cat} value={cat}>{cat}</MenuItem>
-                            ))}
-                        </TextField>
-                        <TextField
-                            label="Amount"
-                            type="number"
-                            name="amount"
-                            value={expense.amount}
-                            onChange={handleChange}
-                            fullWidth
-                        />
-                        <TextField
-                            label="Date"
-                            type="date"
-                            name="date"
-                            value={expense.date}
-                            onChange={handleChange}
-                            slotProps={{ inputLabel: { shrink: true } }}
-                            InputLabelProps={{ shrink: true }}
-                        />
-                        <TextField
-                            label="Notes"
-                            name="notes"
-                            value={expense.notes}
-                            onChange={handleChange}
-                            fullWidth
-                        />
-                        <TextField
-                            label="Payment Method"
-                            name="paymentMethod"
-                            value={expense.paymentMethod}
-                            onChange={handleChange}
-                            fullWidth
-                            select
-                        >
-                            <MenuItem value="">Select Payment Method</MenuItem>
-                            {["Cash", "Card", "UPI", "Bank Transfer"].map((method) => (
-                                <MenuItem key={method} value={method}>{method}</MenuItem>
-                            ))}
-                        </TextField>
-                        <Button type="submit" variant="contained" disabled={loading}>Save Expense</Button>
-                    </Box>
-                </form>
-            )}
-            <Typography variant="h5" sx={{ marginBottom: 2 }}>
-                Expense History:
-            </Typography>
-            <Typography variant="h5" sx={{ marginBottom: 2 }}>
-                Filtered Expenses Summary: <span style={{ color: 'red' }} > ₹{filteredTotal} </span>
-            </Typography>
-            {/* Expenses Table */}
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell><Typography variant="h6" component="div">Category</Typography></TableCell>
-                            <TableCell><Typography variant="h6" component="div">Amount</Typography></TableCell>
-                            <TableCell><Typography variant="h6" component="div">Date</Typography></TableCell>
-                            <TableCell><Typography variant="h6" component="div">Payment Method</Typography></TableCell>
-                            <TableCell><Typography variant="h6" component="div">Notes</Typography></TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {recentExpenses.map((expense, index) => (
-                            <TableRow key={index}>
-                                <TableCell>{expense.category}</TableCell>
-                                <TableCell style={{ color: 'blue' }}>₹{expense.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
-                                <TableCell>{expense.date}</TableCell>
-                                <TableCell>{expense.paymentMethod}</TableCell>
-                                <TableCell>{expense.notes}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+                            <Collapse in={showForm}>
+                                <Box component="form" onSubmit={handleSubmit} sx={{ mb: 4, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField select fullWidth label="Category" name="category" value={expense.category} onChange={handleChange} required>
+                                                {["Food", "Transport", "Entertainment", "Shopping", "Bills", "Health", "Education", "Others"].map(opt => (
+                                                    <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                                                ))}
+                                            </TextField>
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField fullWidth label="Amount" name="amount" type="number" value={expense.amount} onChange={handleChange} required InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }} />
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField fullWidth label="Date" name="date" type="date" value={expense.date} onChange={handleChange} required InputLabelProps={{ shrink: true }} />
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <TextField select fullWidth label="Payment Method" name="paymentMethod" value={expense.paymentMethod} onChange={handleChange}>
+                                                {["Cash", "Card", "UPI", "Bank Transfer"].map(opt => <MenuItem key={opt} value={opt}>{opt}</MenuItem>)}
+                                            </TextField>
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <TextField fullWidth label="Notes" name="notes" value={expense.notes} onChange={handleChange} multiline rows={2} />
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <Button type="submit" variant="contained" fullWidth size="large" disabled={loading}>
+                                                {loading ? 'Adding...' : 'Save Expense'}
+                                            </Button>
+                                        </Grid>
+                                    </Grid>
+                                </Box>
+                            </Collapse>
 
-            {/* Snackbar for success/error messages */}
-            <Snackbar
-                open={!!message}
-                autoHideDuration={6000}
-                onClose={() => setMessage("")}
-            >
-                <Alert onClose={() => setMessage("")} severity={severity}>
-                    {message}
-                </Alert>
+                            <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+                                <TextField select size="small" label="Month" value={filters.month} onChange={(e) => handleFilterChange(e, 'month')} sx={{ minWidth: 150 }}>
+                                    <MenuItem value="">All Months</MenuItem>
+                                    {Array.from({ length: 12 }, (_, i) => (
+                                        <MenuItem key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('en-US', { month: 'long' })}</MenuItem>
+                                    ))}
+                                </TextField>
+                                <Button variant="outlined" startIcon={<ClearIcon />} onClick={clearFilters}>Clear Filters</Button>
+                            </Box>
+
+                            <TableContainer>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Date</TableCell>
+                                            <TableCell>Category</TableCell>
+                                            <TableCell>Method</TableCell>
+                                            <TableCell>Notes</TableCell>
+                                            <TableCell align="right">Amount</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {recentExpenses.map((row, index) => (
+                                            <TableRow key={index} hover>
+                                                <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                                                <TableCell><Chip label={row.category} color="primary" variant="outlined" size="small" /></TableCell>
+                                                <TableCell>{row.paymentMethod}</TableCell>
+                                                <TableCell sx={{ color: 'text.secondary', maxWidth: 200 }} noWrap>{row.notes}</TableCell>
+                                                <TableCell align="right" sx={{ fontWeight: 'bold', color: 'error.main' }}>
+                                                    ₹{row.amount.toLocaleString('en-IN')}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                        {recentExpenses.length === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={5} align="center">No records found</TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            <Snackbar open={!!message} autoHideDuration={6000} onClose={() => setMessage("")}>
+                <Alert onClose={() => setMessage("")} severity={severity} sx={{ width: '100%' }}>{message}</Alert>
             </Snackbar>
         </Box>
     );

@@ -1,250 +1,317 @@
 import React, { useState } from 'react';
-import { Button, TextField, Typography, Container, Box, Paper, Collapse, Snackbar, Alert } from '@mui/material';
+import {
+    Button,
+    TextField,
+    Typography,
+    Box,
+    Paper,
+    Fade,
+    Snackbar,
+    Alert,
+    IconButton,
+    InputAdornment,
+    Grid,
+    Link
+} from '@mui/material';
+import {
+    Visibility,
+    VisibilityOff,
+    Email as EmailIcon,
+    Lock as LockIcon,
+    Person as PersonIcon
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import './Login.css';
 
 function Login_Register() {
-    const [loginActive, setLoginActive] = useState(false);
-    const [signupActive, setSignupActive] = useState(false);
-    const [forgotPasswordActive, setForgotPasswordActive] = useState(false);
-    const [severity, setSeverity] = useState("success");
-    const [message, setMessage] = useState("");
-    const [snackbarOpen, setSnackbarOpen] = useState(false); // Snackbar open state
+    const navigate = useNavigate();
+    const [isLogin, setIsLogin] = useState(true);
+    const [isForgotPassword, setIsForgotPassword] = useState(false);
 
-    const [signupFormData, setSignupFormData] = useState({
-        fullName: '',
+    // UI State
+    const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'success'
+    });
+
+    // Form Data
+    const [formData, setFormData] = useState({
         email: '',
         password: '',
+        username: '',
+        fullName: '',
         confirmPassword: '',
-        passwordsMatch: true,
-    });
-    const [resetPasswordFormData, setResetPasswordFormData] = useState({
-        email: '',
         newPassword: '',
-        confirmNewPassword: '',
-        passwordsMatch: true,
+        confirmNewPassword: ''
     });
 
-    const handleLoginClick = () => {
-        setLoginActive(!loginActive);
-        setSignupActive(false);
-        setForgotPasswordActive(false);
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSignupClick = () => {
-        setSignupActive(!signupActive);
-        setLoginActive(false);
-        setForgotPasswordActive(false);
+    const handleToggleMode = (mode) => {
+        setFormData({
+            email: '',
+            password: '',
+            username: '',
+            fullName: '',
+            confirmPassword: '',
+            newPassword: '',
+            confirmNewPassword: ''
+        });
+
+        if (mode === 'login') {
+            setIsLogin(true);
+            setIsForgotPassword(false);
+        } else if (mode === 'signup') {
+            setIsLogin(false);
+            setIsForgotPassword(false);
+        } else if (mode === 'forgot') {
+            setIsForgotPassword(true);
+            setIsLogin(false);
+        }
     };
 
-    const handleForgotPasswordClick = () => {
-        setForgotPasswordActive(!forgotPasswordActive);
-        setLoginActive(false);
-        setSignupActive(false);
+    const showNotification = (message, severity = 'success') => {
+        setSnackbar({ open: true, message, severity });
     };
 
-    const handleSnackbarClose = () => {
-        setSnackbarOpen(false);
+    const handleCloseSnackbar = () => {
+        setSnackbar({ ...snackbar, open: false });
     };
 
-    const handleLoginSubmit = async (event) => {
-        event.preventDefault();
-        const email = event.target.email.value;
-        const password = event.target.password.value;
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+
+        const API_BASE_URL = 'http://127.0.0.1:5000/api'; // In real app, move to config
+
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
-            });
-            const data = await response.json();
-            if (response.ok) {
-                console.log('Login successful:', data);
-                setMessage("User  Logged in successfully!");
-                setSeverity("success");
-                setSnackbarOpen(true); // Show Snackbar
-                localStorage.setItem('token', data.token); // Store token in localStorage
-                setTimeout(() => {
-                    window.location.href = '/dashboard';
-                }, 3000);
+            let endpoint = '';
+            let payload = {};
+
+            if (isForgotPassword) {
+                if (formData.newPassword !== formData.confirmNewPassword) {
+                    showNotification("Passwords do not match", "error");
+                    setLoading(false);
+                    return;
+                }
+                endpoint = '/reset-password';
+                payload = {
+                    email: formData.email,
+                    newPassword: formData.newPassword,
+                    confirmNewPassword: formData.confirmNewPassword
+                };
+            } else if (isLogin) {
+                endpoint = '/login';
+                payload = { email: formData.email, password: formData.password };
             } else {
-                console.error('Login error:', data.error);
-                setMessage(data.error || "Login failed");
-                setSeverity("error");
-                setSnackbarOpen(true); // Show Snackbar
+                if (formData.password !== formData.confirmPassword) {
+                    showNotification("Passwords do not match", "error");
+                    setLoading(false);
+                    return;
+                }
+                endpoint = '/signup';
+                payload = {
+                    username: formData.username,
+                    fullName: formData.fullName,
+                    email: formData.email,
+                    password: formData.password
+                };
             }
-        } catch (error) {
-            console.error('Login error:', error);
-            setMessage("An error occurred during login");
-            setSeverity("error");
-            setSnackbarOpen(true); // Show Snackbar
-        }
-    };
 
-    const handleSignupSubmit = async (event) => {
-        event.preventDefault();
-        if (!signupFormData.passwordsMatch) {
-            console.error("Passwords do not match");
-            setMessage("Passwords do not match");
-            setSeverity("error");
-            setSnackbarOpen(true); // Show Snackbar
-            return;
-        }
-        try {
-            const response = await fetch('http://127.0.0.1:5000/api/signup', {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(signupFormData),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
             });
+
+            const data = await response.json();
+
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error('Signup error:', errorData.error || 'An error occurred');
-                setMessage(errorData.error || "Signup failed");
-                setSeverity("error");
-                setSnackbarOpen(true); // Show Snackbar
-                return;
+                throw new Error(data.error || 'Request failed');
             }
-            setSignupActive(false);
-            setTimeout(() => {
-                
-                setLoginActive(true);
-            }, 2000);
-            const data = await response.json().catch(() => ({}));
-            setMessage("User  Registered successfully!");
-            setSeverity("success");
-            setSnackbarOpen(true); // Show Snackbar
-            console.log('Signup successful :', data);
-            setSignupFormData({
-                username: '',
-                fullName: '',
-                email: '',
-                password: '',
-                confirmPassword: '',
-                passwordsMatch: true,
-            });
-        } catch (error) {
-            console.error('Signup error:', error);
-            setMessage("Registration Error");
-            setSeverity("error");
-            setSnackbarOpen(true); // Show Snackbar
-        }
-    };
 
-    const handleSignupChange = (event) => {
-        const { name, value } = event.target;
-        const updatedFormData = { ...signupFormData, [name]: value };
-
-        if (name === "confirmPassword" || name === "password") {
-            updatedFormData.passwordsMatch = updatedFormData.password === updatedFormData.confirmPassword;
-        }
-
-        setSignupFormData(updatedFormData);
-    };
-
-    const handleResetPasswordChange = (event) => {
-        const { name, value } = event.target;
-        const updatedFormData = { ...resetPasswordFormData, [name]: value };
-
-        if (name === "confirmNewPassword" || name === "newPassword") {
-            updatedFormData.passwordsMatch = updatedFormData.newPassword === updatedFormData.confirmNewPassword;
-        }
-
-        setResetPasswordFormData(updatedFormData);
-    };
-
-    const handleResetPasswordSubmit = async (event) => {
-        event.preventDefault();
-        if (!resetPasswordFormData.passwordsMatch) {
-            console.error("Passwords do not match");
-            setMessage("Passwords do not match");
-            setSeverity("error");
-            setSnackbarOpen(true); // Show Snackbar
-            return;
-        }
-        try {
-            const response = await fetch('http://127.0.0.1:5000/api/reset-password', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(resetPasswordFormData),
-            });
-            const data = await response.json();
-            if (response.ok) {
-                console.log('Reset password successful:', data);
-                setMessage("Reset password successfully!");
-                setSeverity("success");
-                setSnackbarOpen(true); // Show Snackbar
+            if (isLogin) {
+                localStorage.setItem('token', data.token);
+                showNotification("Welcome back! Redirecting...", "success");
+                setTimeout(() => navigate('/dashboard'), 1500);
+            } else if (isForgotPassword) {
+                showNotification("Password reset successful! Please login.", "success");
+                setTimeout(() => handleToggleMode('login'), 2000);
             } else {
-                console.error('Reset password error:', data.error);
-                setMessage("Reset password Error!");
-                setSeverity("error");
-                setSnackbarOpen(true); // Show Snackbar
+                showNotification("Account created! Please login.", "success");
+                setTimeout(() => handleToggleMode('login'), 2000);
             }
-            setResetPasswordFormData({
-                email: '',
-                newPassword: '',
-                confirmNewPassword: '',
-                passwordsMatch: true,
-            });
+
         } catch (error) {
-            console.error('Reset password error:', error);
-            setMessage("An error occurred during password reset");
-            setSeverity("error");
-            setSnackbarOpen(true); // Show Snackbar
+            console.error(error);
+            showNotification(error.message, "error");
+        } finally {
+            setLoading(false);
         }
+    };
+
+    const renderForm = () => {
+        if (isForgotPassword) {
+            return (
+                <>
+                    <Typography variant="h4" fontWeight="700" color="primary" sx={{ mb: 1 }}>Reset Password</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Enter your email and new password</Typography>
+
+                    <TextField
+                        fullWidth label="Email Address" name="email" type="email"
+                        value={formData.email} onChange={handleChange} margin="normal" required
+                        InputProps={{ startAdornment: <InputAdornment position="start"><EmailIcon color="action" /></InputAdornment> }}
+                    />
+                    <TextField
+                        fullWidth label="New Password" name="newPassword" type={showPassword ? "text" : "password"}
+                        value={formData.newPassword} onChange={handleChange} margin="normal" required
+                        InputProps={{
+                            startAdornment: <InputAdornment position="start"><LockIcon color="action" /></InputAdornment>,
+                            endAdornment: <InputAdornment position="end"><IconButton onClick={() => setShowPassword(!showPassword)}>{showPassword ? <VisibilityOff /> : <Visibility />}</IconButton></InputAdornment>
+                        }}
+                    />
+                    <TextField
+                        fullWidth label="Confirm Password" name="confirmNewPassword" type="password"
+                        value={formData.confirmNewPassword} onChange={handleChange} margin="normal" required
+                        InputProps={{ startAdornment: <InputAdornment position="start"><LockIcon color="action" /></InputAdornment> }}
+                    />
+
+                    <Button type="submit" fullWidth variant="contained" size="large" sx={{ mt: 3, mb: 2 }} disabled={loading}>
+                        {loading ? 'Processing...' : 'Reset Password'}
+                    </Button>
+
+                    <Box textAlign="center">
+                        <Link component="button" variant="body2" onClick={() => handleToggleMode('login')} underline="hover">
+                            Back to Login
+                        </Link>
+                    </Box>
+                </>
+            );
+        }
+
+        if (isLogin) {
+            return (
+                <>
+                    <Typography variant="h4" fontWeight="700" color="primary" sx={{ mb: 1 }}>Welcome Back!</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Please sign in to continue</Typography>
+
+                    <TextField
+                        fullWidth label="Email Address" name="email" type="email"
+                        value={formData.email} onChange={handleChange} margin="normal" required
+                        InputProps={{ startAdornment: <InputAdornment position="start"><EmailIcon color="action" /></InputAdornment> }}
+                    />
+                    <TextField
+                        fullWidth label="Password" name="password" type={showPassword ? "text" : "password"}
+                        value={formData.password} onChange={handleChange} margin="normal" required
+                        InputProps={{
+                            startAdornment: <InputAdornment position="start"><LockIcon color="action" /></InputAdornment>,
+                            endAdornment: <InputAdornment position="end"><IconButton onClick={() => setShowPassword(!showPassword)}>{showPassword ? <VisibilityOff /> : <Visibility />}</IconButton></InputAdornment>
+                        }}
+                    />
+
+                    <Box display="flex" justifyContent="flex-end" sx={{ mt: 1 }}>
+                        <Link component="button" variant="body2" onClick={() => handleToggleMode('forgot')} underline="hover">
+                            Forgot Password?
+                        </Link>
+                    </Box>
+
+                    <Button type="submit" fullWidth variant="contained" size="large" sx={{ mt: 3, mb: 2 }} disabled={loading}>
+                        {loading ? 'Signing In...' : 'Sign In'}
+                    </Button>
+
+                    <Box textAlign="center">
+                        <Typography variant="body2" color="text.secondary">
+                            Don't have an account? {' '}
+                            <Link component="button" variant="body2" fontWeight="600" onClick={() => handleToggleMode('signup')} underline="hover">
+                                Sign Up
+                            </Link>
+                        </Typography>
+                    </Box>
+                </>
+            );
+        }
+
+        return (
+            <>
+                <Typography variant="h4" fontWeight="700" color="primary" sx={{ mb: 1 }}>Create Account</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Join SpendSmart today</Typography>
+
+                <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                        <TextField
+                            fullWidth label="Username" name="username"
+                            value={formData.username} onChange={handleChange} margin="dense" required
+                            InputProps={{ startAdornment: <InputAdornment position="start"><PersonIcon color="action" /></InputAdornment> }}
+                        />
+                    </Grid>
+                    <Grid item xs={6}>
+                        <TextField
+                            fullWidth label="Full Name" name="fullName"
+                            value={formData.fullName} onChange={handleChange} margin="dense" required
+                        />
+                    </Grid>
+                </Grid>
+
+                <TextField
+                    fullWidth label="Email Address" name="email" type="email"
+                    value={formData.email} onChange={handleChange} margin="dense" required
+                    InputProps={{ startAdornment: <InputAdornment position="start"><EmailIcon color="action" /></InputAdornment> }}
+                />
+                <TextField
+                    fullWidth label="Password" name="password" type={showPassword ? "text" : "password"}
+                    value={formData.password} onChange={handleChange} margin="dense" required
+                    InputProps={{
+                        startAdornment: <InputAdornment position="start"><LockIcon color="action" /></InputAdornment>,
+                        endAdornment: <InputAdornment position="end"><IconButton onClick={() => setShowPassword(!showPassword)}>{showPassword ? <VisibilityOff /> : <Visibility />}</IconButton></InputAdornment>
+                    }}
+                />
+                <TextField
+                    fullWidth label="Confirm Password" name="confirmPassword" type="password"
+                    value={formData.confirmPassword} onChange={handleChange} margin="dense" required
+                    InputProps={{ startAdornment: <InputAdornment position="start"><LockIcon color="action" /></InputAdornment> }}
+                />
+
+                <Button type="submit" fullWidth variant="contained" color="secondary" size="large" sx={{ mt: 3, mb: 2 }} disabled={loading}>
+                    {loading ? 'Creating Account...' : 'Sign Up'}
+                </Button>
+
+                <Box textAlign="center">
+                    <Typography variant="body2" color="text.secondary">
+                        Already have an account? {' '}
+                        <Link component="button" variant="body2" fontWeight="600" onClick={() => handleToggleMode('login')} underline="hover">
+                            Sign In
+                        </Link>
+                    </Typography>
+                </Box>
+            </>
+        );
     };
 
     return (
-        <Container style={{ maxWidth: '100%' }} className="login-register-container">
-            <Box display="flex" justifyContent="center" mb={2}>
-                <Button variant="contained" color="success" onClick={handleLoginClick}>Log In</Button>
-                <Button variant="contained" color="success" onClick={handleSignupClick} sx={{ ml: 2 }}>Sign Up</Button>
-            </Box>
-
-            <Collapse in={loginActive}>
-                <Paper component="form" onSubmit={handleLoginSubmit} className="form" sx={{ p: 2 }}>
-                    <Typography variant="h5">Login</Typography>
-                    <TextField name="email" type="email" label="Email" fullWidth required margin="normal" />
-                    <TextField name="password" type="password" label="Password" fullWidth required margin="normal" />
-                    <Button type="submit" variant="contained" color="secondary" fullWidth>Login</Button>
-                    <Button type="button" onClick={handleForgotPasswordClick} fullWidth sx={{ mt: 1 }} color="secondary">Forgot Password?</Button>
+        <div className="login-container-root">
+            <Fade in={true} timeout={800}>
+                <Paper elevation={4} sx={{ p: 4, width: '100%', maxWidth: 450, borderRadius: 4, zIndex: 1 }}>
+                    <form onSubmit={handleSubmit}>
+                        {renderForm()}
+                    </form>
                 </Paper>
-            </Collapse>
+            </Fade>
 
-            <Collapse in={signupActive}>
-                <Paper component="form" onSubmit={handleSignupSubmit} className="form" sx={{ p: 2 }}>
-                    <Typography variant="h5">Sign Up</Typography>
-                    <TextField name="username" label="Username" fullWidth onChange={handleSignupChange} margin="normal" />
-                    <TextField name="fullName" label="Full Name" fullWidth onChange={handleSignupChange} margin="normal" />
-                    <TextField name="email" label="Email" type="email" fullWidth onChange={handleSignupChange} margin="normal" />
-                    <TextField name="password" label="Password" type="password" fullWidth onChange={handleSignupChange} margin="normal" />
-                    <TextField name="confirmPassword" label="Confirm Password" type="password" fullWidth onChange={handleSignupChange} margin="normal" />
-                    {!signupFormData.passwordsMatch && <Typography color="error">Passwords do not match</Typography>}
-                    <Button type="submit" variant="contained" color="secondary" fullWidth>Register</Button>
-                </Paper>
-            </Collapse>
-
-            <Collapse in={forgotPasswordActive}>
-                <Paper component="form" onSubmit={handleResetPasswordSubmit} className="form" sx={{ p: 2 }}>
-                    <Typography variant="h5">Reset Password</Typography>
-                    <TextField name="email" label="Email" type="email" fullWidth onChange={handleResetPasswordChange} margin="normal" />
-                    <TextField name="newPassword" label="New Password" type="password" fullWidth onChange={handleResetPasswordChange} margin="normal" />
-                    <TextField name="confirmNewPassword" label="Confirm New Password" type="password" fullWidth onChange={handleResetPasswordChange} margin="normal" />
-                    {!resetPasswordFormData.passwordsMatch && <Typography color="error">Passwords do not match</Typography>}
-                    <Button type="submit" variant="contained" color="secondary" fullWidth>Reset Password</Button>
-                </Paper>
-            </Collapse>
-
-            <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
-                <Alert onClose={handleSnackbarClose} severity={severity} sx={{ width: '100%' }}>
-                    {message}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={handleCloseSnackbar}
+            >
+                <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
                 </Alert>
             </Snackbar>
-        </Container>
+        </div>
     );
 }
 

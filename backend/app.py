@@ -13,7 +13,7 @@ from flask_migrate import Migrate
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:CSKsiva%4066@localhost/spendsmart'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:CSK%40siva6@localhost/spendsmart'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # Change this to a random secret key
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=1)  # Set the expiration time for JWT tokens
