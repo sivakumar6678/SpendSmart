@@ -7,6 +7,8 @@
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   position: relative;
   overflow: hidden;
+  background: url('../assets/loginregister1.jpg') center center/cover no-repeat;
+
 }
 
 /* Abstract background shapes */
@@ -32,4 +34,6 @@
   bottom: -50px;
   left: -50px;
   z-index: 0;
+
+
 }
