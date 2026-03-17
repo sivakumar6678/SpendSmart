@@ -18,6 +18,10 @@ class User(db.Model):
     # Relationships
     transactions = db.relationship('Transaction', backref='user', lazy='dynamic')
     incomes = db.relationship('Income', backref='user', lazy='dynamic')
+    budgets = db.relationship('Budget', backref='user', lazy='dynamic')
+    saving_goals = db.relationship('SavingGoal', backref='user', lazy='dynamic')
+    notifications = db.relationship('Notification', backref='user', lazy='dynamic')
+    achievements = db.relationship('Achievement', backref='user', lazy='dynamic')
 
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -59,6 +63,65 @@ class Income(db.Model):
 
     def __repr__(self):
         return f'<Incomes {self.source} - {self.amount}>'
+
+
+# Budget Model
+class Budget(db.Model):
+    __tablename__ = 'budgets'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    category = db.Column(db.String(100), nullable=True)  # NULL = total budget
+    amount = db.Column(db.Float, nullable=False)
+    month = db.Column(db.Integer, nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def __repr__(self):
+        return f'<Budget {self.category or "Total"} - {self.amount}>'
+
+
+# Saving Goal Model
+class SavingGoal(db.Model):
+    __tablename__ = 'saving_goals'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    target_amount = db.Column(db.Float, nullable=False)
+    current_amount = db.Column(db.Float, default=0.0)
+    target_date = db.Column(db.Date, nullable=False)
+    completed = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def __repr__(self):
+        return f'<SavingGoal {self.title} - {self.target_amount}>'
+
+
+# Notification Model
+class Notification(db.Model):
+    __tablename__ = 'notifications'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    message = db.Column(db.String(500), nullable=False)
+    type = db.Column(db.String(50), nullable=False, default='info')
+    read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def __repr__(self):
+        return f'<Notification {self.type} - {self.message[:30]}>'
+
+
+# Achievement Model
+class Achievement(db.Model):
+    __tablename__ = 'achievements'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.String(500), nullable=False)
+    badge_type = db.Column(db.String(50), nullable=False)
+    date_earned = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def __repr__(self):
+        return f'<Achievement {self.title}>'
 
 
 # Password Reset Token Model

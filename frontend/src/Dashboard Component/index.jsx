@@ -14,8 +14,7 @@ import {
   ListItemIcon,
   ListItemText,
   Avatar,
-  Menu,
-  MenuItem,
+  Badge,
   useTheme,
   useMediaQuery,
   Container
@@ -31,7 +30,8 @@ import {
   EmojiEvents as AchievementsIcon,
   Savings as SavingsIcon,
   Insights as InsightsIcon,
-  Notifications as NotificationsIcon
+  Notifications as NotificationsIcon,
+  AccountBalance as BudgetIcon,
 } from '@mui/icons-material';
 
 // Components
@@ -43,14 +43,24 @@ import EditProfileSection from './components/EditProfileSection';
 import LogoutSection from './components/LogoutSection';
 import useDashboardData from './hooks/useDashboardData';
 
+// Feature Components
+import { AppProvider, useAppContext } from './context/AppContext';
+import BudgetList from './components/Budget/BudgetList';
+import SavingGoalList from './components/SavingGoals/SavingGoalList';
+import AchievementsList from './components/Achievements/AchievementsList';
+import FinancialInsights from './components/Insights/FinancialInsights';
+import NotificationCenter from './components/Notifications/NotificationCenter';
+import CategoriesSection from './components/Categories/CategoriesSection';
+
 const drawerWidth = 280;
 
-function Dashboard() {
+function DashboardContent() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('Dashboard');
   const { userData, incomeData, expenseData, isLoading, error, updateUserData, refreshData } = useDashboardData();
+  const { unreadNotifications } = useAppContext();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -68,9 +78,9 @@ function Dashboard() {
     { text: 'Expenses', icon: <ExpenseIcon />, section: 'Expenses' },
     { type: 'divider' },
     { text: 'Categories', icon: <CategoryIcon />, section: 'Categories' },
-    { text: 'Achievements', icon: <AchievementsIcon />, section: 'Achievements' },
+    { text: 'Budgeting', icon: <BudgetIcon />, section: 'Budgeting' },
     { text: 'Saving Goals', icon: <SavingsIcon />, section: 'Saving Goals' },
-    { text: 'Budgeting', icon: <SavingsIcon />, section: 'Budgeting' }, // Reusing Icon for now
+    { text: 'Achievements', icon: <AchievementsIcon />, section: 'Achievements' },
     { text: 'Insights', icon: <InsightsIcon />, section: 'Insights' },
     { text: 'Notifications', icon: <NotificationsIcon />, section: 'NotificationCenter' },
     { type: 'divider' },
@@ -122,7 +132,13 @@ function Dashboard() {
                 }}
               >
                 <ListItemIcon sx={{ color: item.color || 'inherit', minWidth: 40 }}>
-                  {item.icon}
+                  {item.section === 'NotificationCenter' ? (
+                    <Badge badgeContent={unreadNotifications} color="error" max={9}>
+                      {item.icon}
+                    </Badge>
+                  ) : (
+                    item.icon
+                  )}
                 </ListItemIcon>
                 <ListItemText
                   primary={item.text}
@@ -153,23 +169,21 @@ function Dashboard() {
       case 'Profile':
         return <ProfileSection userData={userData} onEditProfile={() => setActiveSection('EditProfile')} />;
       case 'EditProfile':
-        return <EditProfileSection userData={userData} onUpdateProfile={refreshData} onCancel={() => setActiveSection('Profile')} />; // Pass refreshData correctly if needed
+        return <EditProfileSection userData={userData} onUpdateProfile={refreshData} onCancel={() => setActiveSection('Profile')} />;
       case 'Logout':
         return <LogoutSection onCancel={() => setActiveSection('Dashboard')} />;
-
-      // Placeholders for future features
       case 'Categories':
-      case 'Achievements':
-      case 'Saving Goals':
+        return <CategoriesSection />;
       case 'Budgeting':
+        return <BudgetList />;
+      case 'Saving Goals':
+        return <SavingGoalList />;
+      case 'Achievements':
+        return <AchievementsList />;
       case 'Insights':
+        return <FinancialInsights />;
       case 'NotificationCenter':
-        return (
-          <Box textAlign="center" py={8}>
-            <Typography variant="h4" color="text.secondary" gutterBottom>Coming Soon</Typography>
-            <Typography color="text.secondary">The {activeSection} feature is under development.</Typography>
-          </Box>
-        );
+        return <NotificationCenter />;
       default:
         return <DashboardOverview incomeData={incomeData} expenseData={expenseData} />;
     }
@@ -201,8 +215,16 @@ function Dashboard() {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {activeSection}
+            {activeSection === 'NotificationCenter' ? 'Notifications' : activeSection}
           </Typography>
+          <IconButton
+            color="inherit"
+            onClick={() => handleSectionChange('NotificationCenter')}
+          >
+            <Badge badgeContent={unreadNotifications} color="error" max={9}>
+              <NotificationsIcon />
+            </Badge>
+          </IconButton>
         </Toolbar>
       </AppBar>
       <Box
@@ -245,6 +267,14 @@ function Dashboard() {
         </Container>
       </Box>
     </Box>
+  );
+}
+
+function Dashboard() {
+  return (
+    <AppProvider>
+      <DashboardContent />
+    </AppProvider>
   );
 }
 

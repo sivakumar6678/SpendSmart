@@ -47,6 +47,7 @@ const IncomeForm = ({ onSuccess }) => {
     const [originalIncome, setOriginalIncome] = useState([]);
     const [recentIncome, setRecentIncome] = useState([]);
     const [totalMonthlyIncome, setTotalMonthlyIncome] = useState(0);
+    const [totalAllTimeIncome, setTotalAllTimeIncome] = useState(0);
     const [showForm, setShowForm] = useState(false);
     const [filters, setFilters] = useState({
         month: '',
@@ -119,6 +120,7 @@ const IncomeForm = ({ onSuccess }) => {
             setOriginalIncome(data.recentIncome);
             setRecentIncome(data.recentIncome);
             setTotalMonthlyIncome(data.totalMonthlyIncome);
+            setTotalAllTimeIncome(data.totalIncome || 0);
         } catch (error) {
             console.error(error);
         }
@@ -154,11 +156,24 @@ const IncomeForm = ({ onSuccess }) => {
     return (
         <Box>
             <Grid container spacing={3}>
-                <Grid item xs={12}>
+                <Grid item xs={12} sm={6}>
+                    <Card sx={{ bgcolor: 'success.main', color: 'success.contrastText' }}>
+                        <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box>
+                                <Typography variant="h6">Total Income (All Time)</Typography>
+                                <Typography variant="h3" fontWeight="bold">
+                                    ₹{totalAllTimeIncome.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </Typography>
+                            </Box>
+                            <MoneyIcon sx={{ fontSize: 60, opacity: 0.8 }} />
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6}>
                     <Card sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
                         <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Box>
-                                <Typography variant="h6">Total Monthly Income</Typography>
+                                <Typography variant="h6">This Month's Income</Typography>
                                 <Typography variant="h3" fontWeight="bold">
                                     ₹{totalMonthlyIncome.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                 </Typography>

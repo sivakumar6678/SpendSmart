@@ -41,6 +41,7 @@ const ExpenseForm = ({ onSuccess }) => {
     const [originalExpenses, setOriginalExpenses] = useState([]);
     const [recentExpenses, setRecentExpenses] = useState([]);
     const [totalMonthlyExpense, setTotalMonthlyExpense] = useState(0);
+    const [totalAllTimeExpense, setTotalAllTimeExpense] = useState(0);
     const [showForm, setShowForm] = useState(false);
     const [filters, setFilters] = useState({
         month: "",
@@ -93,6 +94,7 @@ const ExpenseForm = ({ onSuccess }) => {
             setOriginalExpenses(data.recentExpenses);
             setRecentExpenses(data.recentExpenses);
             setTotalMonthlyExpense(data.totalMonthlyExpenses);
+            setTotalAllTimeExpense(data.totalExpenses || 0);
         } catch (error) {
             console.error(error);
         }
@@ -128,11 +130,24 @@ const ExpenseForm = ({ onSuccess }) => {
     return (
         <Box>
             <Grid container spacing={3}>
-                <Grid item xs={12}>
+                <Grid item xs={12} sm={6}>
+                    <Card sx={{ bgcolor: 'error.main', color: 'error.contrastText' }}>
+                        <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box>
+                                <Typography variant="h6">Total Expenses (All Time)</Typography>
+                                <Typography variant="h3" fontWeight="bold">
+                                    ₹{totalAllTimeExpense.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </Typography>
+                            </Box>
+                            <ExpenseIcon sx={{ fontSize: 60, opacity: 0.8 }} />
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6}>
                     <Card sx={{ bgcolor: 'error.light', color: 'error.contrastText' }}>
                         <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Box>
-                                <Typography variant="h6">Total Monthly Expenses</Typography>
+                                <Typography variant="h6">This Month's Expenses</Typography>
                                 <Typography variant="h3" fontWeight="bold">
                                     ₹{totalMonthlyExpense.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                 </Typography>

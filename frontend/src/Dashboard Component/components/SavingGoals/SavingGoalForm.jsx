@@ -1,26 +1,25 @@
 import React, { useState } from 'react';
-import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  Button, 
-  TextField, 
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
   Typography,
   Box
 } from '@mui/material';
 import { useAppContext } from '../../context/AppContext';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+
 
 const SavingGoalForm = ({ open, onClose, goal = null }) => {
   const { addSavingGoal, updateSavingGoal } = useAppContext();
+  const defaultDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const [formData, setFormData] = useState({
     title: goal?.title || '',
     target_amount: goal?.target_amount || '',
     current_amount: goal?.current_amount || '0',
-    target_date: goal?.target_date ? new Date(goal.target_date) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Default to 30 days from now
+    target_date: goal?.target_date || defaultDate
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,9 +29,7 @@ const SavingGoalForm = ({ open, onClose, goal = null }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleDateChange = (date) => {
-    setFormData(prev => ({ ...prev, target_date: date }));
-  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -44,20 +41,20 @@ const SavingGoalForm = ({ open, onClose, goal = null }) => {
       if (!formData.title.trim()) {
         throw new Error('Please enter a title for your goal');
       }
-      
+
       if (!formData.target_amount || isNaN(formData.target_amount) || parseFloat(formData.target_amount) <= 0) {
         throw new Error('Please enter a valid target amount');
       }
-      
+
       if (parseFloat(formData.current_amount) < 0) {
         throw new Error('Current amount cannot be negative');
       }
-      
+
       if (parseFloat(formData.current_amount) > parseFloat(formData.target_amount)) {
         throw new Error('Current amount cannot be greater than target amount');
       }
-      
-      if (!formData.target_date || formData.target_date < new Date()) {
+
+      if (!formData.target_date || new Date(formData.target_date) < new Date()) {
         throw new Error('Please select a future target date');
       }
 
@@ -65,7 +62,7 @@ const SavingGoalForm = ({ open, onClose, goal = null }) => {
         ...formData,
         target_amount: parseFloat(formData.target_amount),
         current_amount: parseFloat(formData.current_amount),
-        target_date: formData.target_date.toISOString().split('T')[0] // Format as YYYY-MM-DD
+        target_date: formData.target_date // Already in YYYY-MM-DD format
       };
 
       if (goal) {
@@ -126,18 +123,18 @@ const SavingGoalForm = ({ open, onClose, goal = null }) => {
             />
           )}
 
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DatePicker
-              label="Target Date"
-              value={formData.target_date}
-              onChange={handleDateChange}
-              renderInput={(params) => (
-                <TextField {...params} fullWidth margin="normal" required />
-              )}
-              minDate={new Date()}
-              sx={{ width: '100%', mt: 2 }}
-            />
-          </LocalizationProvider>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            label="Target Date"
+            name="target_date"
+            type="date"
+            value={formData.target_date}
+            onChange={handleChange}
+            inputProps={{ min: new Date().toISOString().split('T')[0] }}
+            InputLabelProps={{ shrink: true }}
+          />
 
           {error && (
             <Typography color="error" variant="body2" sx={{ mt: 2 }}>
@@ -148,10 +145,10 @@ const SavingGoalForm = ({ open, onClose, goal = null }) => {
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={loading}>Cancel</Button>
-        <Button 
-          onClick={handleSubmit} 
-          variant="contained" 
-          color="primary" 
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          color="primary"
           disabled={loading}
         >
           {loading ? 'Saving...' : (goal ? 'Update' : 'Create')}

@@ -4,7 +4,7 @@ from config import Config
 from extensions import db, migrate, bcrypt, jwt
 from routes import api_bp
 # Import models so that they are registered with SQLAlchemy
-from models import User, Transaction, Income, PasswordResetToken
+from models import User, Transaction, Income, PasswordResetToken, Budget, SavingGoal, Notification, Achievement
 
 def create_app():
     app = Flask(__name__)
